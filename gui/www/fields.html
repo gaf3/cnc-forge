@@ -1,0 +1,94 @@
+{{~it.fields :field}}
+    {{ var prefix = it.prefix || []; }}
+    {{ var full_name = prefix.concat(field.name).join('-').replace(/\./g, '-'); }}
+    {{ var value = field.value || field.default || (field.multi ? [] : ''); }}
+    {{ var readonly = field.readonly || it.readonly; }}
+    {{?field.fields || field.name == "yaml"}}
+    <div class="uk-form-row"><hr/></div>
+    {{?}}
+    <div class="uk-form-row">
+        <label class="uk-form-label" for="{{=field.name}}"><strong>{{=field.label || field.name}}</strong></label>
+        <div class="uk-form-controls">
+    {{?field.style == "textarea"}}
+        {{?readonly}}
+            {{?field.name == "yaml"}}<pre>{{?}}{{=value}}{{?field.name == "yaml"}}</pre>{{?}}
+        {{??}}
+            <textarea
+                rows='7' cols='42'
+                id="{{!full_name}}"
+                placeholder="{{!field.label || field.name}}"
+                {{?field.trigger}}OnInput="DRApp.current.controller.fields_change();"{{?}}
+            >{{=value}}</textarea>
+        {{?}}
+    {{??field.style == "select" && !readonly}}
+            <select id="{{!full_name}}" {{?field.trigger}}OnChange="DRApp.current.controller.fields_change();"{{?}}>
+        {{?field.optional}}
+                <option value=''></option>
+        {{?}}
+        {{~field.options :option}}
+                <option value='{{!option}}' {{?value == option}}selected{{?}}>
+                    {{= field.labels ? field.labels[option] : option}}
+                </option>
+        {{~}}
+            </select>
+    {{??field.options}}
+        {{?readonly}}
+            {{?field.multi}}
+                {{~value :option}}
+            {{= field.labels ? field.labels[option] : option}}<br/>
+                {{~}}
+            {{??}}
+            {{= field.labels ? field.labels[value] : value}}<br/>
+            {{?}}
+        {{??}}
+            {{~field.options :option}}
+            <input
+                value="{{!option}}"
+            {{?field.multi}}
+                type="checkbox" name="{{!full_name}}"
+                {{?value.indexOf(option) > -1}}checked{{?}}
+            {{??}}
+                type="radio" name="{{!full_name}}"
+                {{?value == option}}checked{{?}}
+            {{?}}
+                {{?field.trigger}}OnClick="DRApp.current.controller.fields_change();"{{?}}
+            />
+            {{= field.labels ? field.labels[option] : option}}<br/>
+            {{~}}
+        {{?}}
+    {{??!field.fields}}
+        {{?readonly}}
+            {{= field.style == "datetime" ? (new Date(value*1000)).toLocaleString() : value}}
+        {{??}}
+            <input
+                id="{{!full_name}}"
+                placeholder="{{!field.label || field.name}}"
+                value="{{!value}}"
+                {{?field.trigger}}OnInput="DRApp.current.controller.delay_change();"{{?}}
+                type="text"
+            />
+        {{?}}
+            <br/>
+    {{?}}
+    {{?field.errors}}
+            <span class='uk-form uk-text-danger'>
+        {{~field.errors :error}}
+                {{=error}}<br/>
+        {{~}}
+            </span>
+    {{?}}
+    {{?field.description}}
+            <dfn>{{=field.description.replace(/\n/g, "<br/>")}}</dfn><br/>
+    {{?}}
+    {{?field.link}}
+        {{ var links = Array.isArray(field.link) ? field.link : [field.link]; }}
+        {{~links: link}}
+            <a href="{{!link.url || link}}" target="{{!link.target || '_blank'}}">{{=link.name || link.url || link}}</a><br/>
+        {{~}}
+    {{?}}
+        </div>
+    </div>
+    {{?field.fields}}
+        {{= DRApp.templates.Fields({fields: field.fields, readonly: readonly, prefix: prefix.concat(field.name)}) }}
+    {{?}}
+{{~}}

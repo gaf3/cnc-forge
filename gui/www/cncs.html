@@ -1,0 +1,18 @@
+{{#def.Header}}
+<div class="uk-overflow-container">
+    <table class="uk-table">
+        <thead>
+            <tr>
+                <th>id</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{~it.cncs :cnc}}
+            <tr OnClick="DRApp.go('cnc_retrieve','{{=cnc.id}}')" class="clickable">
+                <td>{{=cnc.id}}</td>
+            </tr>
+            {{~}}
+        </tbody>
+    </table>
+</div>
+{{#def.Footer}}

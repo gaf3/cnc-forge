@@ -1,0 +1,16 @@
+{{?it.message}}
+<div class="uk-alert uk-alert-success">
+    {{=it.message}}
+</div>
+{{?}}
+{{?it.errors && it.errors.length}}
+<div class="uk-alert uk-alert-danger">
+    {{~it.errors :error}}
+        {{=error}}<br/>
+    {{~}}
+</div>
+{{?}}
+<form class="uk-form uk-form-horizontal">
+    {{= DRApp.templates.Fields(it) }}
+    <br/>
+</form>

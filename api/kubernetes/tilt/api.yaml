@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: cnc-forge
+spec:
+  template:
+    spec:
+      containers:
+      - name: api
+        image: cnc-forge-api
+        imagePullPolicy: Never
+        command: ["python", "-m", "ptvsd", "--host", "0.0.0.0", "--port", "5678", "/opt/service/bin/api.py"]
+        env:
+        - name: LOG_LEVEL
+          value: WARNING
+        ports:
+        - name: debug
+          containerPort: 5678
+          protocol: TCP

@@ -1,0 +1,13 @@
+{{#def.Header}}
+<div class="uk-overflow-container">
+    <button type="button" OnClick="DRApp.go('forge_retrieve', DRApp.current.path.id);" class="uk-button uk-button-primary">
+        Cancel
+    </button>
+    {{?it.ready}}
+    <button type="button" OnClick="DRApp.current.controller.create_save();" class="uk-button uk-button-primary">
+        Create
+    </button>
+    {{?}}
+    {{#def.Form}}
+</div>
+{{#def.Footer}}

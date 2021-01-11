@@ -1,0 +1,19 @@
+{{#def.Header}}
+<div class="uk-overflow-container">
+    <form class="uk-form uk-form-horizontal">
+        <div class="uk-form-row">
+            <label class="uk-form-label" for="id"><strong>id</strong></label>
+            <div class="uk-form-controls">
+                {{=it.cnc.id}}
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label class="uk-form-label" for="yaml"><strong>yaml</strong></label>
+            <div class="uk-form-controls">
+                <pre><code>{{=it.yaml}}</code></pre>
+            </div>
+        </div>
+        <br/>
+    </form>
+</div>
+{{#def.Footer}}

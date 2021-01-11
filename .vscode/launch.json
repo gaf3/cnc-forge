@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        ,
+        {
+            "name": "gui",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:6770/",
+            "webRoot": "${workspaceFolder}/gui/www"
+        },
+        {
+            "name": "api",
+            "type": "python",
+            "request": "attach",
+            "port": 16738,
+            "host": "localhost",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/api",
+                    "remoteRoot": "/opt/service"
+                }
+            ]
+        },
+        {
+            "name": "daemon",
+            "type": "python",
+            "request": "attach",
+            "port": 26738,
+            "host": "localhost",
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/daemon",
+                    "remoteRoot": "/opt/service"
+                }
+            ]
+        }
+    ]
+}

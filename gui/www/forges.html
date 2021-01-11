@@ -1,0 +1,20 @@
+{{#def.Header}}
+<div class="uk-overflow-container">
+    <table class="uk-table">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{~it.forges :forge}}
+            <tr OnClick="DRApp.go('forge_retrieve','{{=forge.id}}')" class="clickable">
+                <td>{{=forge.id}}</td>
+                <td>{{=forge.description}}</td>
+            </tr>
+            {{~}}
+        </tbody>
+    </table>
+</div>
+{{#def.Footer}}
