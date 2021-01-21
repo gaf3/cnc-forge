@@ -1,15 +1,22 @@
-<div class="uk-container uk-container-center uk-margin-top uk-margin-large-bottom">
-    <h3 class="uk-text-center">CnC Forge - Code and Changes Crafting</h3>
-    <nav class="uk-navbar uk-margin-bottom">
-        <ul class="uk-navbar-nav">
-            <li {{? DRApp.current.paths[0] == '' }}class="uk-active"{{?}}>
-                <a href="{{=DRApp.link('home')}}">Home</a>
-            </li>
-            <li {{? DRApp.current.paths[0] == 'forge' }}class="uk-active"{{?}}>
-                <a href="{{=DRApp.link('forge_list')}}">Forges</a>
-            </li>
-            <li {{? DRApp.current.paths[0] == 'cnc' }}class="uk-active"{{?}}>
-                <a href="{{=DRApp.link('cnc_list')}}">CnC's</a>
-            </li>
-        </ul>
-    </nav>
+<div id="page-wrapper" >
+	<div id="nav-wrapper"  class='flex flex-left flex-vertical'>
+	<div id="header-container" class='flex flex-left flex-vertical'>
+		<object id="logo" data="assets/cnc-forge.svg" type="image/svg+xml"/>
+		<h3 class="uk-text-left" id="main-subtitle">Code and Changes Crafting</h3>
+	</div>
+	<div id="nav-link-wrapper">
+		<nav class="nav-primary">
+			<ul class="link-list">
+				<li {{? DRApp.current.paths[0] == '' }}class="uk-active"{{?}}>
+					<a href="{{=DRApp.link('home')}}">Home</a>
+				</li>
+				<li {{? DRApp.current.paths[0] == 'forge' }}class="uk-active"{{?}}>
+					<a href="{{=DRApp.link('forge_list')}}">Forges</a>
+				</li>
+				<li {{? DRApp.current.paths[0] == 'cnc' }}class="uk-active"{{?}}>
+					<a href="{{=DRApp.link('cnc_list')}}">CnC's</a>
+				</li>
+			</ul>
+		</nav>
+	</div>
+</div>
