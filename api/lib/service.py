@@ -19,11 +19,12 @@ import opengui
 FIELDS = [
     {
         "name": "forge",
+        "description": "What to craft",
         "readonly": True
     },
     {
-        "name": "cnc",
-        "description": "Name of what to cnc, used for repos, branches, change requests",
+        "name": "craft",
+        "description": "Name of what to craft, used for repos, branches, change requests",
         "validation": '^[a-z0-9\-]{4,48}$',
         "trigger": True
     }
@@ -81,13 +82,11 @@ class Forge(flask_restful.Resource):
     @staticmethod
     def forge(id):
         """
-        Gets all forges return as dict
+        Gets a single forge and return as dict
         """
 
         with open(f"/opt/service/forge/{id}.yaml", "r") as forge_file:
-            forge = {
-                "description": yaml.safe_load(forge_file)["description"]
-            }
+            forge = yaml.safe_load(forge_file)
 
         forge["id"] = id
 
@@ -150,10 +149,10 @@ class CnC(flask_restful.Resource):
         fields.extend(forge.get("input", {}).get("fields", []))
 
         if "generate" in forge.get("input", {}):
-            module_name, method_name =  forge["input"]["generate"].rsplilt(".", 1)
-            module = __import__(f"tempplate.{module_name}")
-            method = getattr(module, method_name)
-            fields.extend(method(fields, values, forge))
+            module_name, method_name =  forge["input"]["generate"].rsplit(".", 1)
+            module = __import__(f"forge.{module_name}")
+            method = getattr(getattr(module, module_name), method_name)
+            fields.extend(method(fields, values, forge) or [])
 
         return fields
 
@@ -192,12 +191,14 @@ class CnC(flask_restful.Resource):
         if not fields.validate():
             return fields.to_dict(), 400
 
-        cnc = {field.name: field.value for field in fields}
+        cnc = forge
 
-        cnc["id"] = f"{cnc['cnc']}-{cnc['forge']}-{int(time.time())}"
+        cnc["values"] = {field.name: field.value for field in fields}
+        cnc["status"] = "Created"
+
+        cnc["id"] = f"{cnc['values']['craft']}-{cnc['values']['forge']}-{int(time.time())}"
 
         flask.current_app.redis.set(f"/cnc/{cnc['id']}", json.dumps(cnc), ex=86400)
-        flask.current_app.redis.lpush("/cncs", cnc["id"])
 
         return {"cnc": cnc}, 200
 
@@ -231,3 +232,29 @@ class CnC(flask_restful.Resource):
             return self.list()
         else:
             return self.retrieve(id)
+
+    def patch(self, id):
+        """
+        PATCH method handling (just retries)
+        """
+
+        cnc = self.retrieve(id)
+
+        cnc["status"] = "Retry"
+
+        flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
+
+        return {"cnc": cnc, "yaml": yaml.safe_dump(cnc, default_flow_style=False)}, 200
+
+    def delete(self, id):
+        """
+        PATCH method handling (just retries)
+        """
+
+        cnc = self.retrieve(id)
+
+        cnc["status"] = "Retry"
+
+        flask.current_app.redis.delete(f"/cnc/{id}")
+
+        return {"deleted": 1}, 200

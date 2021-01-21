@@ -113,6 +113,14 @@ DRApp.controller("Base",null,{
     cnc_retrieve: function() {
         this.it = this.rest("GET", "api/cnc/" + DRApp.current.path.id);
         this.application.render(this.it);
+    },
+    cnc_retry: function() {
+        this.it = this.rest("PATCH", "api/cnc/" + DRApp.current.path.id);
+        this.application.render(this.it);
+    },
+    cnc_delete: function() {
+        this.it = this.rest("DELETE", "api/cnc/" + DRApp.current.path.id);
+        this.application.go("cnc_list");
     }
 });
 

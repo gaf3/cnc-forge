@@ -5,3 +5,4 @@ resources:
 - ../../redis/kubernetes/base/
 - ../../api/kubernetes/tilt/
 - ../../gui/kubernetes/tilt/
+- ../../daemon/kubernetes/tilt/

@@ -1,0 +1,25 @@
+description: A service as a collection of microservices in teh new architecture
+input:
+  fields:
+  - name: microservices
+    options:
+    - api
+    - daemon
+    - gui
+    - cron
+    multi: true
+    trigger: true
+  generate: rearch.service
+  validate: rearch.validate
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      branch: main
+    changes:
+    - github:
+        repo: rearch-service
+      content:
+      - source: api
+        destination: "{{ api }}"
+        condition: "{{'api' in microservices}}"

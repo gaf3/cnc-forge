@@ -4,8 +4,8 @@ TILT_PORT=6738
 
 up:
 	test -d secret || mkdir -p secret
-	test -d secret/redis.json || echo '{"host": "db.redis"}' > secret/redis.json
-	test -d secret/github.json || echo '{"user": "changeme", "token": "*******"}' > secret/github.json
+	test -f secret/redis.json || echo '{"host": "redis.cnc-forge"}' > secret/redis.json
+	test -f secret/github.json || echo '{"user": "changeme", "token": "*******"}' > secret/github.json
 	kubectx docker-desktop
 	tilt --port $(TILT_PORT) up
 

@@ -1,6 +1,6 @@
 ACCOUNT=nandyio
 IMAGE=chore-gui
-VERSION?=0.4
+VERSION?=0.1.0
 NAME=$(IMAGE)-$(ACCOUNT)
 
 .PHONY: cross build shell push install update remove reset
