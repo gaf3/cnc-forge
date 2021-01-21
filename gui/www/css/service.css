@@ -19,8 +19,8 @@ body {
   justify-content: flex-start;
 }
 
-#logo .svg {
-  fill: white;
+text {
+  fill: white !important;
 }
 
 #main-subtitle {
@@ -29,6 +29,7 @@ body {
   text-transform: lowercase;
   font-style: italic;
   font-size: 110%;
+  color: white;
 }
 
 #header-container {
