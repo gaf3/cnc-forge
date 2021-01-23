@@ -1,5 +1,0 @@
-description: A simple template to test things
-output:
-  code:
-  - github:
-      repo: "{{ craft }}"

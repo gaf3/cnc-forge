@@ -5,6 +5,7 @@ Main module for daemon
 import os
 import json
 import time
+import shutil
 import fnmatch
 import traceback
 import subprocess
@@ -29,6 +30,8 @@ class Daemon:
             self.github = github.GitHub(**json.loads(github_file.read()))
 
         subprocess.check_output("mkdir -p /root/.ssh", shell=True)
+        subprocess.check_output("cp /opt/service/secret/github.key /root/.ssh/", shell=True)
+        subprocess.check_output("chmod 600 /root/.ssh/github.key", shell=True)
         subprocess.check_output("cp /opt/service/secret/.sshconfig /root/.ssh/config", shell=True)
         subprocess.check_output("cp /opt/service/secret/.gitconfig /root/.gitconfig", shell=True)
 
@@ -43,67 +46,131 @@ class Daemon:
         if isinstance(template, dict):
             return {key: self.transform(item, values) for key, item in template.items()}
 
-    def preserve(self, path, patterns):
+    def iterate(self, items, values):
 
-        for pattern in patterns:
-            if fnmatch.fnmatch(path, pattern):
+        for item in items:
+            if "condition" not in item or self.transform(item["condition"], values):
+                yield item, values
+
+    def exclude(self, content):
+
+        for pattern in content['include']:
+            if fnmatch.fnmatch(content['source'], pattern):
+                return False
+
+        for pattern in content['exclude']:
+            if fnmatch.fnmatch(content['source'], pattern):
                 return True
 
-    def load(self, location, path):
+        return False
 
-        with open(f"/opt/service/{location}/{path}", "r") as load_file:
+    def preserve(self, content):
+
+        for pattern in content['transform']:
+            if fnmatch.fnmatch(content['source'], pattern):
+                return False
+
+        for pattern in content['preserve']:
+            if fnmatch.fnmatch(content['source'], pattern):
+                return True
+
+        return False
+
+    def source(self, cnc, content):
+
+        with open(f"/opt/service/cnc/{cnc['id']}/source/{content['source']}", "r") as load_file:
             return load_file.read()
 
-    def craft(self, cnc, code, change, source, destination, preserve):
+    def destination(self, cnc, content, data=None):
 
-        if os.path.isdir(source):
-            for item in os.listdir(source):
-                self.craft(cnc, code, change, f"{source}/item", f"{desintation}/item", preserve)
+        if data is not None:
+            with open(f"/opt/service/cnc/{cnc['id']}/destination/{content['destination']}", "w") as destination_file:
+                destination_file.write(data)
+        else:
+            with open(f"/opt/service/cnc/{cnc['id']}/destination/{content['destination']}", "r") as destination_file:
+                return destination_file.read()
+
+    def copy(self, cnc, content):
+        shutil.copy(
+            f"/opt/service/cnc/{cnc['id']}/source/{content['source']}",
+            f"/opt/service/cnc/{cnc['id']}/destination/{content['destination']}"
+        )
+
+    def craft(self, cnc, code, change, content, values):
+
+        if self.exclude(content):
             return
 
-        product = self.load("source", source)
+        print(content)
 
-        if not self.preserve(source, preserve):
-            product = self.transform(product, cnc["values"])
+        cnc['content'] = content
 
-        with open(f"/opt/service/destination/{destination}", "r") as product_file:
-            return product_file.write(product)
+        if os.path.isdir(f"/opt/service/cnc/{cnc['id']}/source/{content['source']}"):
 
-    def content(self, cnc, code, change, content):
+            if not os.path.exists(f"/opt/service/cnc/{cnc['id']}/destination/{content['source']}"):
+                os.makedirs(f"/opt/service/cnc/{cnc['id']}/destination/{content['source']}")
 
-        content["source"] = self.transform(content["source"], cnc["values"])
-        content["destination"] = self.transform(content["destination"], cnc["values"])
-        content["preserve"] = self.transform(content.get("preserve", []), cnc["values"])
+            for item in os.listdir(f"/opt/service/cnc/{cnc['id']}/source/{content['source']}"):
+                self.craft(cnc, code, change, {
+                    "source": f"{content['source']}/{item}",
+                    "destination": f"{content['destination']}/{item}",
+                    "exclude": content['exclude'],
+                    "include": content['include'],
+                    "preserve": content['preserve'],
+                    "transform": content['transform']
+                }, values)
+            return
 
-        if isinstance(content["preserve"], str):
-            content["perserve"] = [content["preserve"]]
+        if self.preserve(content):
+            self.copy(cnc, content)
+        else:
+            self.destination(cnc, content, self.transform(self.source(cnc, content), cnc["values"]))
 
-        self.craft(cnc, code, change, content["source"], content["destination"], content["preserve"])
+        del cnc['content']
 
-    def change(self, cnc, code, change):
+    def content(self, cnc, code, change, content, values):
+
+        content["source"] = self.transform(content["source"], values)
+        content["destination"] = self.transform(content["destination"], values)
+
+        for collection in ["exclude", "include", "preserve", "transform"]:
+            content[collection] = self.transform(content.get(collection, []), values)
+            if isinstance(content[collection], str):
+                content[collection] = [content[collection]]
+
+        self.craft(cnc, code, change, content, values)
+
+    def change(self, cnc, code, change, values):
 
         if "github" in change:
-            github["repo"] = self.transform(github["repo"], cnc["values"])
-            self.github.change(cnc, code, code["github"])
+            change["github"] = self.transform(change["github"], values)
+            self.github.change(cnc, code, change["github"])
 
-        for content in change["content"]:
-            self.content(cnc, code, change, content)
+        for content, content_values in self.iterate(change["content"], values):
+            self.content(cnc, code, change, content, content_values)
 
-    def code(self, cnc, code):
+    def code(self, cnc, code, values):
 
         if "github" in code:
-            github["repo"] = self.transform(github["repo"], cnc["values"])
-            self.github.code(cnc, code, code["github"])
+            code["github"] = self.transform(code["github"], values)
+            self.github.clone(cnc, code, code["github"])
 
-        for change in code["change"]:
-            self.change(cnc, code, change)
+        for change, change_values in self.iterate(code["change"], values):
+            self.change(cnc, code, change, change_values)
+
+        if "github" in code:
+            self.github.commit(cnc, code, code["github"])
 
     def cnc(self, cnc):
 
         cnc["code"] = cnc["output"]["code"]
 
-        for code in cnc["code"]:
-            self.code(cnc, code)
+        os.makedirs(f"/opt/service/cnc/{cnc['id']}", exist_ok=True)
+
+        for code, code_values in self.iterate(cnc["code"], cnc["values"]):
+            self.code(cnc, code, code_values)
+
+        shutil.rmtree(f"/opt/service/cnc/{cnc['id']}")
 
         cnc["status"] = "Completed"
 

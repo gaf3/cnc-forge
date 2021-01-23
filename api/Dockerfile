@@ -21,8 +21,7 @@ RUN apk add --no-cache --virtual .pip-deps  \
 
 COPY bin bin
 COPY lib lib
-COPY forge forge
 
-ENV PYTHONPATH "/opt/service/lib:${PYTHONPATH}"
+ENV PYTHONPATH "/opt/service/forge:/opt/service/lib:${PYTHONPATH}"
 
 CMD ["/opt/service/bin/api.py"]

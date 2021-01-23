@@ -34,10 +34,16 @@ spec:
             path: /health
             port: 80
         volumeMounts:
+        - name: forge
+          mountPath: "/opt/service/forge"
+          readOnly: true
         - name: secret
           mountPath: "/opt/service/secret"
           readOnly: true
       volumes:
+      - name: forge
+        configMap:
+          name: forge
       - name: secret
         secret:
           secretName: secret

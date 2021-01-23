@@ -20,11 +20,13 @@ output:
     - github:
         repo:
         branch:
-        pull_request:
       content:
       - source:
         destination:
+        exclude:
+        include:
         preserve:
+        transform:
         condition:
         iterate:
         generate:

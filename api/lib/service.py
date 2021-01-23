@@ -238,9 +238,12 @@ class CnC(flask_restful.Resource):
         PATCH method handling (just retries)
         """
 
-        cnc = self.retrieve(id)
+        cnc = self.retrieve(id)["cnc"]
 
         cnc["status"] = "Retry"
+
+        if "traceback" in cnc:
+            del cnc["traceback"]
 
         flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
 
@@ -251,9 +254,7 @@ class CnC(flask_restful.Resource):
         PATCH method handling (just retries)
         """
 
-        cnc = self.retrieve(id)
-
-        cnc["status"] = "Retry"
+        self.retrieve(id)
 
         flask.current_app.redis.delete(f"/cnc/{id}")
 

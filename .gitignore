@@ -1,2 +1,7 @@
-secret/
 *.pyc
+cnc/
+forge/
+secret/
+kubernetes/tilt/cnc.yaml
+kubernetes/tilt/forge.yaml
+kubernetes/tilt/secret.yaml
