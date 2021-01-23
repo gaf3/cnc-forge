@@ -4,6 +4,8 @@ Module for CnC
 
 import os
 import copy
+import json
+import yaml
 import shutil
 import fnmatch
 
@@ -145,6 +147,73 @@ class CnC:
             f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}"
         )
 
+    def text(self, source, destination, location):
+        """
+        Inserts destination into source at location if not present
+        """
+
+        if source in destination:
+            return destination
+
+        if isinstance(location, bool) and location:
+            return destination + source
+
+        if source[-1] == "\n":
+            source = source[:-1]
+
+        lines = []
+
+        for line in destination.split("\n"):
+            if f"cnc-forge: {location}" in line:
+                lines.append(source)
+            lines.append(line)
+
+        return "\n".join(lines)
+
+    def value(self, value, location):
+        """
+        Recursively get location
+        """
+
+        if not location:
+            return value
+
+        if isinstance(location, str):
+            location = location.split('.')
+
+        place = location.pop(0)
+
+        if place.isdigit() or (place[0] == '-' and place[1:].isidigit()):
+            place = int(place)
+
+        return self.value(value[place], location)
+
+    def json(self, source, destination, location):
+        """
+        Inserts destination into source at location if not present
+        """
+
+        source = json.loads(source)
+        destination = json.loads(destination)
+
+        value = self.value(destination, location)
+        value.append(source)
+
+        return json.dumps(destination)
+
+    def yaml(self, source, destination, location):
+        """
+        Inserts destination into source at location if not present
+        """
+
+        source = yaml.safe_load(source)
+        destination = yaml.safe_load(destination)
+
+        value = self.value(destination, location)
+        value.append(source)
+
+        return yaml.safe_dump(destination)
+
     def craft(self, code, change, content, values):
         """
         Craft changes, the actual work of creating desitnations from sources
@@ -186,9 +255,25 @@ class CnC:
         # If we're preserving, jsut copy, else load source and transformation to destination
 
         if self.preserve(content):
+
             self.copy(content)
+
         else:
-            self.destination(content, self.transform(self.source(content), self.data["values"]))
+
+            source = self.transform(self.source(content), values)
+
+            # See if we're injecting anywhere, else just overwrite
+
+            if "text" in content:
+                destination = self.text(source, self.destination(content), content["text"])
+            elif "json" in content:
+                destination = self.json(source, self.destination(content), content["json"])
+            elif "yaml" in content:
+                destination = self.yaml(source, self.destination(content), content["yaml"])
+            else:
+                destination = source
+
+            self.destination(content, destination)
 
         # It worked, so delete the content
 

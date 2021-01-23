@@ -1,6 +1,9 @@
 import unittest
 import unittest.mock
 
+import json
+import yaml
+
 import cnc
 import jinja2
 
@@ -93,3 +96,90 @@ class TestService(unittest.TestCase):
             (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "u"}),
             (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "s"})
         ])
+
+    def test_text(self):
+
+        destination = "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n"
+
+        self.assertEqual(self.cnc.text("nope\n", destination, False), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
+        self.assertEqual(self.cnc.text("foe\n", destination, True), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
+        self.assertEqual(self.cnc.text("yep\n", destination, True), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep\n")
+        self.assertEqual(self.cnc.text("yep\n", destination, "here"), "fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
+
+    def test_value(self):
+
+        value = {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
+                ]
+            }
+        }
+
+        self.assertEqual(self.cnc.value(value, False), {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
+                ]
+            }
+        })
+        self.assertEqual(self.cnc.value(value, "a"), {
+            "b": [
+                {"c": "d"},
+                {"e": "f"}
+            ]
+        })
+        self.assertEqual(self.cnc.value(value, "a.b"), [
+            {"c": "d"},
+            {"e": "f"}
+        ])
+        self.assertEqual(self.cnc.value(value, "a.b.1"), {
+            "e": "f"
+        })
+        self.assertEqual(self.cnc.value(value, "a.b.1.e"), "f")
+
+    def test_json(self):
+
+        destination = json.dumps({
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
+                ]
+            }
+        })
+        source = json.dumps({"g": "h"})
+
+        self.assertEqual(json.loads(self.cnc.json(source, destination, "a.b")), {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"},
+                    {"g": "h"}
+                ]
+            }
+        })
+
+    def test_yaml(self):
+
+        destination = yaml.safe_dump({
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
+                ]
+            }
+        })
+        source = yaml.safe_dump({"g": "h"})
+
+        self.assertEqual(yaml.safe_load(self.cnc.yaml(source, destination, "a.b")), {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"},
+                    {"g": "h"}
+                ]
+            }
+        })
