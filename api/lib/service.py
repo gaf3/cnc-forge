@@ -245,6 +245,9 @@ class CnC(flask_restful.Resource):
         if "traceback" in cnc:
             del cnc["traceback"]
 
+        if "content" in cnc:
+            del cnc["content"]
+
         flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
 
         return {"cnc": cnc, "yaml": yaml.safe_dump(cnc, default_flow_style=False)}, 200
