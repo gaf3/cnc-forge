@@ -22,4 +22,4 @@ COPY lib lib
 
 ENV PYTHONPATH "/opt/service/lib:${PYTHONPATH}"
 
-CMD ["/opt/service/bin/api.py"]
+CMD ["/opt/service/bin/daemon.py"]

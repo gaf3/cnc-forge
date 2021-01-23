@@ -3,6 +3,7 @@ Module for CnC
 """
 
 import os
+import copy
 import shutil
 import fnmatch
 
@@ -30,15 +31,51 @@ class CnC:
         if isinstance(template, dict):
             return {key: self.transform(item, values) for key, item in template.items()}
 
-    def iterate(self, items, values):
+    def transpose(self, block, values):
         """
-        Iterate through items, checking condition
+        Transposes values
+        """
+
+        transpose = block.get("transpose", {})
+
+        return {derivative: values[original] for derivative, original in transpose.items()}
+
+    def iterate(self, block, values):
+        """
+        Iterates values with transposition
+        """
+
+        iterate_values = [self.transpose(block, values)]
+
+        iterate = block.get("iterate", {})
+
+        for one in sorted(iterate.keys()):
+            many_values = []
+            for many_value in iterate_values:
+                for value in values[iterate[one]]:
+                    many_values.append({**many_value, one: value})
+            iterate_values = many_values
+
+        return iterate_values
+
+    def condition(self, block, values):
+        """
+        Evaludates condition in values
+        """
+
+        return "condition" not in block or self.transform(block["condition"], values) == "True"
+
+    def each(self, blocks, values):
+        """
+        Go through blocks, checking condition
         Eventually we will emit values too
         """
 
-        for item in items:
-            if "condition" not in item or self.transform(item["condition"], values):
-                yield item, values
+        for block in blocks:
+            for iterate_values in self.iterate(block, values):
+                block_values = {**values, **iterate_values}
+                if self.condition(block, block_values):
+                    yield copy.deepcopy(block), block_values
 
     def exclude(self, content):
         """
@@ -189,9 +226,9 @@ class CnC:
             change["github"] = self.transform(change["github"], values)
             self.daemon.github.change(self.data, code, change["github"])
 
-        # Iterate through content, which it'll check conditions
+        # Go through each content, which it'll check conditions, transpose, and iterate
 
-        for content, content_values in self.iterate(change["content"], values):
+        for content, content_values in self.each(change["content"], values):
             self.content(code, change, content, content_values)
 
     def code(self, code, values):
@@ -205,9 +242,9 @@ class CnC:
             code["github"] = self.transform(code["github"], values)
             self.daemon.github.clone(self.data, code, code["github"])
 
-        # Iterate through changes, which it'll check conditions
+        # Go through each change, which it'll check conditions, transpose, and iterate
 
-        for change, change_values in self.iterate(code["change"], values):
+        for change, change_values in self.each(code["change"], values):
             self.change(code, change, change_values)
 
         # If there's a github block, use it to commit the code
@@ -234,9 +271,9 @@ class CnC:
 
         os.makedirs(f"/opt/service/cnc/{self.data['id']}", exist_ok=True)
 
-        # Iterate through changes, which it'll check conditions
+        # Go through each code, which it'll check conditions, transpose, and iterate
 
-        for code, code_values in self.iterate(self.data["code"], self.data["values"]):
+        for code, code_values in self.each(self.data["code"], self.data["values"]):
             self.code(code, code_values)
 
         # If we're here we were successful and can clean up

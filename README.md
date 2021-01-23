@@ -78,6 +78,10 @@ output: # The Code and Changes to craft.
 Some experiental ideas
 
 ```
+iterate:
+  one: many
+  one: many
+
 source: .vscode/gui.launch.json
 destination: .vscode/.launch.json
 json:

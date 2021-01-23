@@ -1,6 +1,5 @@
 import unittest
 import unittest.mock
-import klotio_unittest
 
 import os
 import json
