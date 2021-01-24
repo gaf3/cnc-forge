@@ -197,7 +197,9 @@ class CnC:
         destination = json.loads(destination)
 
         value = self.value(destination, location)
-        value.append(source)
+
+        if source not in value:
+            value.append(source)
 
         return json.dumps(destination)
 
@@ -210,7 +212,9 @@ class CnC:
         destination = yaml.safe_load(destination)
 
         value = self.value(destination, location)
-        value.append(source)
+
+        if source not in value:
+            value.append(source)
 
         return yaml.safe_dump(destination)
 
@@ -230,14 +234,14 @@ class CnC:
 
         self.data['content'] = content
 
-        # IF source is a directory
+        # Make sure the directory exists
+
+        if not os.path.exists(os.path.dirname(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}")):
+            os.makedirs(os.path.dirname(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}"))
+
+        # If source is a directory
 
         if os.path.isdir(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}"):
-
-            # Make sure it exists on destination
-
-            if not os.path.exists(f"/opt/service/cnc/{self.data['id']}/destination/{content['source']}"):
-                os.makedirs(f"/opt/service/cnc/{self.data['id']}/destination/{content['source']}")
 
             # Iterate though the items found
 
@@ -287,7 +291,7 @@ class CnC:
         # Transform the source and destination
 
         content["source"] = self.transform(content["source"], values)
-        content["destination"] = self.transform(content["destination"], values)
+        content["destination"] = self.transform(content.get("destination", content["source"]), values)
 
         # Transform exclude, include, preserve, and transforma and ensure they're lists
 

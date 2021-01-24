@@ -63,7 +63,6 @@ class GitHub:
         for exists in self.iterate("user/repos"):
             if exists["full_name"] == repo["full_name"]:
                 repo.setdefault("base_branch", exists["default_branch"])
-                repo["init"] = len(self.request("GET", f"repos/{repo['full_name']}/branches")) == 0
                 return repo
 
         repo["init"] = True
@@ -133,17 +132,12 @@ class GitHub:
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git destination", shell=True))
 
         if github.get("branch") != github["repo"]["base_branch"]:
-
-            github["branch"] = self.branch(
-                github["repo"], github.get("branch", cnc["id"])
-            )
-            github["pull_request"] = self.pull_request(
-                github["repo"], github["branch"], github["branch"]
-            )
+            github["branch"] = self.branch(github["repo"], github.get("branch", cnc["id"]))
 
         os.chdir(f"/opt/service/cnc/{cnc['id']}/destination")
 
-        if github["repo"]["init"]:
+        if github['branch'].encode() not in subprocess.check_output(f"git branch", shell=True):
+            github['upstream'] = True
             print(subprocess.check_output(f"git checkout -b {github['branch']}", shell=True))
         else:
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
@@ -167,9 +161,14 @@ class GitHub:
 
         print(subprocess.check_output("git add .", shell=True))
 
-        print(subprocess.check_output(f"git commit -am '{cnc['id']}' ", shell=True))
+        if b"Changes to be committed" in subprocess.check_output("git status", shell=True):
 
-        if github["repo"]["init"]:
-            print(subprocess.check_output(f"git push --set-upstream origin {github['repo']['base_branch']}", shell=True))
-        else:
-            print(subprocess.check_output(f"git push origin", shell=True))
+            print(subprocess.check_output(f"git commit -am '{cnc['id']}' ", shell=True))
+
+            if github.get("upstream"):
+                print(subprocess.check_output(f"git push --set-upstream origin {github['branch']}", shell=True))
+            else:
+                print(subprocess.check_output(f"git push origin", shell=True))
+
+        if github.get("branch") != github["repo"]["base_branch"]:
+            github["pull_request"] = self.pull_request(github["repo"], github["branch"], github["branch"])
