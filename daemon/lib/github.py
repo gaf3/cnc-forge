@@ -57,13 +57,13 @@ class GitHub:
         if "full_name" not in repo:
             repo["full_name"] = f"{repo.get('org') or self.user}/{repo['name']}"
 
-        if not ensure:
-            return repo
-
         for exists in self.iterate("user/repos"):
             if exists["full_name"] == repo["full_name"]:
                 repo.setdefault("base_branch", exists["default_branch"])
                 return repo
+
+        if not ensure:
+            return repo
 
         repo["init"] = True
 
@@ -153,7 +153,7 @@ class GitHub:
 
         if github.get("branch") and github["branch"] != github["repo"]["base_branch"]:
             os.chdir(f"/opt/service/cnc/{cnc['id']}/source")
-            print(subprocess.check_output(f"git checkout {github['branch']}"))
+            print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
 
     def commit(self, cnc, code, github):
 

@@ -201,7 +201,7 @@ class CnC:
         if source not in value:
             value.append(source)
 
-        return json.dumps(destination)
+        return json.dumps(destination, indent=4)
 
     def yaml(self, source, destination, location):
         """
@@ -216,7 +216,17 @@ class CnC:
         if source not in value:
             value.append(source)
 
-        return yaml.safe_dump(destination)
+        return yaml.safe_dump(destination, default_flow_style=False)
+
+    def mode(self, content):
+        """
+        Have the desination mode match the source mode
+        """
+
+        os.chmod(
+            f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}",
+            os.stat(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}").st_mode
+        )
 
     def craft(self, code, change, content, values):
         """
@@ -268,6 +278,8 @@ class CnC:
 
             # See if we're injecting anywhere, else just overwrite
 
+            mode = False
+
             if "text" in content:
                 destination = self.text(source, self.destination(content), content["text"])
             elif "json" in content:
@@ -275,9 +287,13 @@ class CnC:
             elif "yaml" in content:
                 destination = self.yaml(source, self.destination(content), content["yaml"])
             else:
+                mode = True
                 destination = source
 
             self.destination(content, destination)
+
+            if mode:
+                self.mode(content)
 
         # It worked, so delete the content
 

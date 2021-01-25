@@ -39,7 +39,7 @@ class Daemon:
         subprocess.check_output("cp /opt/service/secret/.sshconfig /root/.ssh/config", shell=True)
         subprocess.check_output("cp /opt/service/secret/.gitconfig /root/.gitconfig", shell=True)
 
-        self.env = jinja2.Environment()
+        self.env = jinja2.Environment(keep_trailing_newline=True)
 
     def process(self):
         """

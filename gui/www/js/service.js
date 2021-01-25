@@ -38,7 +38,7 @@ DRApp.controller("Base",null,{
     },
     delay_change: function() {
         this.delay_clear();
-        this.timer = window.setTimeout($.proxy(this, "fields_change"), 2000);
+        this.delay_timer = window.setTimeout($.proxy(this, "fields_change"), 2000);
     },
     fields_change: function() {
         this.delay_clear();
