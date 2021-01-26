@@ -1,4 +1,6 @@
-""" Module for interacting with GitHub """
+"""
+Module for interacting with GitHub
+"""
 
 import os
 import shutil
@@ -6,7 +8,9 @@ import requests
 import subprocess
 
 class GitHub:
-    """ Class for interacting with GitHub """
+    """
+    Class for interacting with GitHub
+    """
 
     def __init__(self, user, token, url="https://api.github.com"):
 
@@ -19,7 +23,9 @@ class GitHub:
         self.user = self.request("GET", "user")["login"]
 
     def request(self, method, path, params=None, json=None, verify=True):
-        """ Performs a request and return the JSON """
+        """
+        Performs a request and return the JSON
+        """
 
         response = self.api.request(method, f"{self.url}/{path}", params=params, json=json)
 
@@ -29,7 +35,9 @@ class GitHub:
         return response.json()
 
     def iterate(self, path, params=None, json=None):
-        """ Iterate through all results """
+        """
+        Iterate through all results
+        """
 
         if params is None:
             params = {}
@@ -45,7 +53,9 @@ class GitHub:
             results = self.request("GET", path, params, json)
 
     def repo(self, repo, ensure=True):
-        """ Ensure a repo exists, whether org or user """
+        """
+        Ensure a repo exists, whether org or user
+        """
 
         if isinstance(repo, str):
             if "/" in repo:
@@ -79,8 +89,31 @@ class GitHub:
 
         return repo
 
+    def hook(self, repo, hooks):
+        """
+        Ensure one or more hooks are on a repo
+        """
+
+        if isinstance(hooks, str):
+            hooks = [hooks]
+
+        hooks = [{"url": hook} if isinstance(hook, str) else hook for hook in hooks]
+
+        exists = [hook["config"]["url"] for hook in self.iterate(f"repos/{repo['full_name']}/hooks")]
+
+        for hook in hooks:
+
+            if hook['url'] in exists:
+                continue
+
+            self.request("POST", f"repos/{repo['full_name']}/hooks", json={"config": hook})
+
+        return hooks
+
     def branch(self, repo, branch):
-        """ Ensures a branch exists """
+        """
+        Ensures a branch exists
+        """
 
         for exists in self.iterate(f"repos/{repo['full_name']}/branches"):
             if exists["name"] == branch:
@@ -96,7 +129,9 @@ class GitHub:
         return branch
 
     def pull_request(self, repo, branch, pull_request):
-        """ Ensures a pull request exists """
+        """
+        Ensures a pull request exists
+        """
 
         if isinstance(pull_request, str):
             pull_request = {"title": pull_request}
@@ -122,8 +157,14 @@ class GitHub:
         return pull_request
 
     def clone(self, cnc, code, github):
+        """
+        Clones a repo for a code block
+        """
 
         github["repo"] = self.repo(github["repo"])
+
+        if "hook" in github:
+            github["hook"] = self.hook(github["repo"], github["hook"])
 
         shutil.rmtree(f"/opt/service/cnc/{cnc['id']}/destination", ignore_errors=True)
 
@@ -143,6 +184,9 @@ class GitHub:
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
 
     def change(self, cnc, code, github):
+        """
+        Clones a repo for a change block
+        """
 
         github["repo"] = self.repo(github["repo"], ensure=False)
 
@@ -156,6 +200,9 @@ class GitHub:
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
 
     def commit(self, cnc, code, github):
+        """
+        Commits a repo for a code block
+        """
 
         os.chdir(f"/opt/service/cnc/{cnc['id']}/destination")
 
