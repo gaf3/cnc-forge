@@ -40,7 +40,7 @@ class CnC:
 
         transpose = block.get("transpose", {})
 
-        return {derivative: values[original] for derivative, original in transpose.items()}
+        return {derivative: values[original] for derivative, original in transpose.items() if original in values}
 
     def iterate(self, block, values):
         """
