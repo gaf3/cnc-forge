@@ -87,13 +87,13 @@ class CnC:
         # Check override to include no matter what first
 
         for pattern in content['include']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
                 return False
 
         # Now exclude
 
         for pattern in content['exclude']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
                 return True
 
         return False
@@ -106,13 +106,13 @@ class CnC:
         # Check override first to transform no matter what
 
         for pattern in content['transform']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
                 return False
 
         # Now preserve
 
         for pattern in content['preserve']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
                 return True
 
         return False
