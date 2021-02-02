@@ -23,7 +23,7 @@ class Daemon:
 
     def __init__(self):
 
-        self.sleep = float(os.environ['SLEEP'])
+        self.sleep = int(os.environ['SLEEP'])
 
         with open("/opt/service/secret/redis.json", "r") as redis_file:
             self.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.loads(redis_file.read()))

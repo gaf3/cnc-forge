@@ -20,17 +20,14 @@ class GitHub:
         self.api.auth = (self.user, self.token)
         self.url = url
 
-        self.user = self.request("GET", "user")["login"]
-
-    def request(self, method, path, params=None, json=None, verify=True):
+    def request(self, method, path, params=None, json=None):
         """
         Performs a request and return the JSON
         """
 
         response = self.api.request(method, f"{self.url}/{path}", params=params, json=json)
 
-        if verify:
-            response.raise_for_status()
+        response.raise_for_status()
 
         return response.json()
 
@@ -49,7 +46,7 @@ class GitHub:
         while results:
             for result in results:
                 yield result
-            params["page"] += 1
+            params = {**params, "page": params["page"] + 1}
             results = self.request("GET", path, params, json)
 
     def repo(self, repo, ensure=True):
@@ -75,17 +72,15 @@ class GitHub:
         if not ensure:
             return repo
 
-        repo["init"] = True
-
         repo.setdefault("private", True)
 
         if repo.get('org'):
             path = f"orgs/{repo['org']}/repos"
             repo.setdefault("visibility", "internal")
         else:
-            path = f"user/repos"
+            path = "user/repos"
 
-        repo.setdefault("base_branch", self.request("POST", path, json=repo)["default_branch"])
+        repo.setdefault("base_branch", self.request("POST", path, json=dict(repo))["default_branch"])
 
         return repo
 
@@ -142,21 +137,19 @@ class GitHub:
             if exists["head"]["ref"] == branch:
                 return pull_request
 
-        print({
+        create = {
             "head": branch,
             "base": repo['base_branch'],
-            "title": pull_request["title"]
-        })
+            **pull_request
+        }
 
-        self.request("POST", f"repos/{repo['full_name']}/pulls", json={
-            "head": branch,
-            "base": repo['base_branch'],
-            "title": pull_request["title"]
-        })
+        print(create)
+
+        self.request("POST", f"repos/{repo['full_name']}/pulls", json=create)
 
         return pull_request
 
-    def clone(self, cnc, code, github):
+    def clone(self, cnc, github):
         """
         Clones a repo for a code block
         """
@@ -166,16 +159,18 @@ class GitHub:
         if "hook" in github:
             github["hook"] = self.hook(github["repo"], github["hook"])
 
-        shutil.rmtree(f"/opt/service/cnc/{cnc['id']}/destination", ignore_errors=True)
+        os.chdir(cnc.base())
 
-        os.chdir(f"/opt/service/cnc/{cnc['id']}/")
+        destination = cnc.destination("", path=True)
+
+        shutil.rmtree(destination, ignore_errors=True)
 
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git destination", shell=True))
 
         if github.get("branch") != github["repo"]["base_branch"]:
-            github["branch"] = self.branch(github["repo"], github.get("branch", cnc["id"]))
+            github["branch"] = self.branch(github["repo"], github.get("branch", cnc.data["id"]))
 
-        os.chdir(f"/opt/service/cnc/{cnc['id']}/destination")
+        os.chdir(destination)
 
         if github['branch'].encode() not in subprocess.check_output(f"git branch", shell=True):
             github['upstream'] = True
@@ -183,34 +178,39 @@ class GitHub:
         else:
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
 
-    def change(self, cnc, code, github):
+    def change(self, cnc, github):
         """
         Clones a repo for a change block
         """
 
         github["repo"] = self.repo(github["repo"], ensure=False)
 
-        os.chdir(f"/opt/service/cnc/{cnc['id']}/")
+        os.chdir(cnc.base())
 
-        shutil.rmtree(f"/opt/service/cnc/{cnc['id']}/source", ignore_errors=True)
+        source = cnc.source("", path=True)
+
+        shutil.rmtree(source, ignore_errors=True)
+
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git source", shell=True))
 
         if github.get("branch") and github["branch"] != github["repo"]["base_branch"]:
-            os.chdir(f"/opt/service/cnc/{cnc['id']}/source")
+            os.chdir(source)
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
 
-    def commit(self, cnc, code, github):
+    def commit(self, cnc, github):
         """
         Commits a repo for a code block
         """
 
-        os.chdir(f"/opt/service/cnc/{cnc['id']}/destination")
+        destination = cnc.destination("", path=True)
+
+        os.chdir(destination)
 
         print(subprocess.check_output("git add .", shell=True))
 
         if b"Changes to be committed" in subprocess.check_output("git status", shell=True):
 
-            print(subprocess.check_output(f"git commit -am '{cnc['id']}' ", shell=True))
+            print(subprocess.check_output(f"git commit -am '{cnc.data['id']}'", shell=True))
 
             if github.get("upstream"):
                 print(subprocess.check_output(f"git push --set-upstream origin {github['branch']}", shell=True))
@@ -218,4 +218,4 @@ class GitHub:
                 print(subprocess.check_output(f"git push origin", shell=True))
 
         if github.get("branch") != github["repo"]["base_branch"]:
-            github["pull_request"] = self.pull_request(github["repo"], github["branch"], github["branch"])
+            github["pull_request"] = self.pull_request(github["repo"], github["branch"], github.get("pull_request", github["branch"]))

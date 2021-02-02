@@ -4,6 +4,7 @@ Module for CnC
 
 import os
 import copy
+import glob
 import json
 import yaml
 import shutil
@@ -73,6 +74,9 @@ class CnC:
         Eventually we will emit values too
         """
 
+        if isinstance(blocks, dict):
+            blocks = [blocks]
+
         for block in blocks:
             for iterate_values in self.iterate(block, values):
                 block_values = {**values, **iterate_values}
@@ -87,13 +91,13 @@ class CnC:
         # Check override to include no matter what first
 
         for pattern in content['include']:
-            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(content['source'], pattern):
                 return False
 
         # Now exclude
 
         for pattern in content['exclude']:
-            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(content['source'], pattern):
                 return True
 
         return False
@@ -106,36 +110,64 @@ class CnC:
         # Check override first to transform no matter what
 
         for pattern in content['transform']:
-            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(content['source'], pattern):
                 return False
 
         # Now preserve
 
         for pattern in content['preserve']:
-            if content['source'] == pattern or fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(content['source'], pattern):
                 return True
 
         return False
 
-    def source(self, content):
+    def base(self):
+        """
+        Gets the base directory for the current cnc
+        """
+        return f"/opt/service/cnc/{self.data['id']}"
+
+    def relative(self, path):
+        """
+        Gets the relative path based on base and whether source or destnation
+        """
+        return path.split(self.base(), 1)[-1].split("/", 2)[-1]
+
+    def source(self, content, path=False):
         """
         Retrieves the content of a source file
         """
 
-        with open(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}", "r") as load_file:
-            return load_file.read()
+        source = os.path.abspath(f"{self.base()}/source/{content['source']}")
 
-    def destination(self, content, data=None):
+        if not source.startswith(f"{self.base()}/source/"):
+            raise Exception(f"invalid path: {path}")
+
+        if path:
+            return source
+
+        with open(source, "r") as source_file:
+            return source_file.read()
+
+    def destination(self, content, data=None, path=False):
         """
         Retrieve or store the content of a destination file
         """
 
-        if data is not None:
-            with open(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}", "w") as destination_file:
-                destination_file.write(data)
-        else:
-            with open(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}", "r") as destination_file:
+        destination = os.path.abspath(f"{self.base()}/destination/{content['destination']}")
+
+        if not destination.startswith(f"{self.base()}/destination/"):
+            raise Exception(f"invalid path: {path}")
+
+        if path:
+            return destination
+
+        if data is None:
+            with open(destination, "r") as destination_file:
                 return destination_file.read()
+        else:
+            with open(destination, "w") as destination_file:
+                destination_file.write(data)
 
     def copy(self, content):
         """
@@ -143,8 +175,8 @@ class CnC:
         """
 
         shutil.copy(
-            f"/opt/service/cnc/{self.data['id']}/source/{content['source']}",
-            f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}"
+            self.source(content, path=True),
+            self.destination(content, path=True)
         )
 
     def text(self, source, destination, location):
@@ -224,11 +256,11 @@ class CnC:
         """
 
         os.chmod(
-            f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}",
-            os.stat(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}").st_mode
+            self.destination(content, path=True),
+            os.stat(self.source(content, path=True)).st_mode
         )
 
-    def craft(self, code, change, content, values):
+    def craft(self, content, values):
         """
         Craft changes, the actual work of creating desitnations from sources
         """
@@ -246,68 +278,60 @@ class CnC:
 
         # Make sure the directory exists
 
-        if not os.path.exists(os.path.dirname(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}")):
-            os.makedirs(os.path.dirname(f"/opt/service/cnc/{self.data['id']}/destination/{content['destination']}"))
+        if not os.path.exists(os.path.dirname(self.destination(content, path=True))):
+            os.makedirs(os.path.dirname(self.destination(content, path=True)))
 
         # If source is a directory
 
-        if os.path.isdir(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}"):
+        if os.path.isdir(self.source(content, path=True)):
 
             # Iterate though the items found
 
-            for item in os.listdir(f"/opt/service/cnc/{self.data['id']}/source/{content['source']}"):
-                self.craft(code, change, {
+            for item in os.listdir(self.source(content, path=True)):
+                self.craft({**content,
                     "source": f"{content['source']}/{item}",
-                    "destination": f"{content['destination']}/{item}",
-                    "exclude": content['exclude'],
-                    "include": content['include'],
-                    "preserve": content['preserve'],
-                    "transform": content['transform']
+                    "destination": f"{content['destination']}/{item}"
                 }, values)
-            return
-
-        # If we're preserving, jsut copy, else load source and transformation to destination
-
-        if self.preserve(content):
-
-            self.copy(content)
 
         else:
 
-            source = self.transform(self.source(content), values)
+            # If we're preserving, just copy, else load source and transformation to destination
 
-            # See if we're injecting anywhere, else just overwrite
+            if self.preserve(content):
 
-            mode = False
+                self.copy(content)
 
-            if "text" in content:
-                destination = self.text(source, self.destination(content), content["text"])
-            elif "json" in content:
-                destination = self.json(source, self.destination(content), content["json"])
-            elif "yaml" in content:
-                destination = self.yaml(source, self.destination(content), content["yaml"])
             else:
-                mode = True
-                destination = source
 
-            self.destination(content, destination)
+                source = self.transform(self.source(content), values)
 
-            if mode:
-                self.mode(content)
+                # See if we're injecting anywhere, else just overwrite
+
+                mode = False
+
+                if "text" in content:
+                    destination = self.text(source, self.destination(content), content["text"])
+                elif "json" in content:
+                    destination = self.json(source, self.destination(content), content["json"])
+                elif "yaml" in content:
+                    destination = self.yaml(source, self.destination(content), content["yaml"])
+                else:
+                    mode = True
+                    destination = source
+
+                self.destination(content, destination)
+
+                if mode:
+                    self.mode(content)
 
         # It worked, so delete the content
 
         del self.data['content']
 
-    def content(self, code, change, content, values):
+    def content(self, content, values):
         """
         Processes a content
         """
-
-        # Transform the source and destination
-
-        content["source"] = self.transform(content["source"], values)
-        content["destination"] = self.transform(content.get("destination", content["source"]), values)
 
         # Transform exclude, include, preserve, and transforma and ensure they're lists
 
@@ -316,11 +340,19 @@ class CnC:
             if isinstance(content[collection], str):
                 content[collection] = [content[collection]]
 
-        # Craft this content
+        # Transform the source on templating
 
-        self.craft(code, change, content, values)
+        content["source"] = self.transform(content["source"], values)
 
-    def change(self, code, change, values):
+        # Go through the source as glob, transforming destination accordingly, assuming source if missing
+
+        for source in [self.relative(source) for source in glob.glob(self.source(content, path=True))]:
+            self.craft({**content,
+                "source": source,
+                "destination": self.transform(content.get("destination", source), values)
+            }, values)
+
+    def change(self, change, values):
         """
         Process a change block
         """
@@ -329,12 +361,12 @@ class CnC:
 
         if "github" in change:
             change["github"] = self.transform(change["github"], values)
-            self.daemon.github.change(self.data, code, change["github"])
+            self.daemon.github.change(self, change["github"])
 
         # Go through each content, which it'll check conditions, transpose, and iterate
 
         for content, content_values in self.each(change["content"], values):
-            self.content(code, change, content, content_values)
+            self.content(content, content_values)
 
     def code(self, code, values):
         """
@@ -345,17 +377,17 @@ class CnC:
 
         if "github" in code:
             code["github"] = self.transform(code["github"], values)
-            self.daemon.github.clone(self.data, code, code["github"])
+            self.daemon.github.clone(self, code["github"])
 
         # Go through each change, which it'll check conditions, transpose, and iterate
 
         for change, change_values in self.each(code["change"], values):
-            self.change(code, change, change_values)
+            self.change(change, change_values)
 
         # If there's a github block, use it to commit the code
 
         if "github" in code:
-            self.daemon.github.commit(self.data, code, code["github"])
+            self.daemon.github.commit(self, code["github"])
 
     def process(self, data):
         """
@@ -374,7 +406,7 @@ class CnC:
         # Create the directory for this process, in case it dies and
         # we need to look at what's going on
 
-        os.makedirs(f"/opt/service/cnc/{self.data['id']}", exist_ok=True)
+        os.makedirs(self.base(), exist_ok=True)
 
         # Go through each code, which it'll check conditions, transpose, and iterate
 
@@ -384,4 +416,4 @@ class CnC:
         # If we're here we were successful and can clean up
 
         self.data["status"] = "Completed"
-        shutil.rmtree(f"/opt/service/cnc/{self.data['id']}")
+        shutil.rmtree(self.base())

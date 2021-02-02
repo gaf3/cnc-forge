@@ -36,14 +36,14 @@ def build():
     """
 
     app = flask.Flask("cnc-forge-api")
-    api = flask_restful.Api(app)
+    app.api = flask_restful.Api(app)
 
     with open("/opt/service/secret/redis.json", "r") as redis_file:
         app.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.loads(redis_file.read()))
 
-    api.add_resource(Health, '/health')
-    api.add_resource(Forge, '/forge', '/forge/<id>')
-    api.add_resource(CnC, '/cnc', '/cnc/<id>')
+    app.api.add_resource(Health, '/health')
+    app.api.add_resource(Forge, '/forge', '/forge/<id>')
+    app.api.add_resource(CnC, '/cnc', '/cnc/<id>')
 
     return app
 
@@ -92,26 +92,28 @@ class Forge(flask_restful.Resource):
 
         return forge
 
-    def list(self):
+    @classmethod
+    def list(cls):
         """
         Returns the list of forges with descriptions
         """
 
-        forges = self.forges()
+        forges = cls.forges()
 
         return {"forges": [{"id": id, "description": forges[id]} for id in sorted(forges.keys())]}
 
-    def retrieve(self, id):
+    @classmethod
+    def retrieve(cls, id):
         """
         Return a single forge
         """
 
-        forges = self.forges()
+        forges = cls.forges()
 
         if id not in forges:
             return {"message": f"forge '{id}' not found"}, 404
 
-        forge = self.forge(id)
+        forge = cls.forge(id)
 
         return {"forge": forge, "yaml": yaml.safe_dump(forge, default_flow_style=False)}
 
@@ -131,7 +133,8 @@ class CnC(flask_restful.Resource):
     Class of actions to force code and/or chagnes from Forge's.
     """
 
-    def fields(self, forge, values):
+    @staticmethod
+    def fields(forge, values):
         """
         Gets the dynamic fields
         """
@@ -200,16 +203,18 @@ class CnC(flask_restful.Resource):
 
         flask.current_app.redis.set(f"/cnc/{cnc['id']}", json.dumps(cnc), ex=86400)
 
-        return {"cnc": cnc}, 200
+        return {"cnc": cnc}, 202
 
-    def list(self):
+    @staticmethod
+    def list():
         """
         Returns the list of tasks
         """
 
         return {"cncs": [{"id": id.split("/")[-1]} for id in sorted(flask.current_app.redis.keys("/cnc/*"))]}
 
-    def retrieve(self, id):
+    @staticmethod
+    def retrieve(id):
         """
         Return a single task
         """
@@ -238,7 +243,12 @@ class CnC(flask_restful.Resource):
         PATCH method handling (just retries)
         """
 
-        cnc = self.retrieve(id)["cnc"]
+        retrieved = self.retrieve(id)
+
+        if "cnc" not in retrieved:
+            return retrieved
+
+        cnc = retrieved["cnc"]
 
         cnc["status"] = "Retry"
 
@@ -250,15 +260,18 @@ class CnC(flask_restful.Resource):
 
         flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
 
-        return {"cnc": cnc, "yaml": yaml.safe_dump(cnc, default_flow_style=False)}, 200
+        return {"cnc": cnc, "yaml": yaml.safe_dump(cnc, default_flow_style=False)}, 201
 
     def delete(self, id):
         """
         PATCH method handling (just retries)
         """
 
-        self.retrieve(id)
+        retrieved = self.retrieve(id)
+
+        if "cnc" not in retrieved:
+            return retrieved
 
         flask.current_app.redis.delete(f"/cnc/{id}")
 
-        return {"deleted": 1}, 200
+        return {"deleted": 1}, 201
