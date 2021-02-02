@@ -2,6 +2,8 @@
 Module for CnC
 """
 
+# pylint: disable=too-many-public-methods
+
 import os
 import copy
 import glob
@@ -20,6 +22,7 @@ class CnC:
         Store the daemon
         """
 
+        self.data = None
         self.daemon = daemon
 
     def transform(self, template, values):
@@ -27,14 +30,15 @@ class CnC:
         Transform whatever's sent, either str or recurse through
         """
 
-        if isinstance(template, str):
-            return self.daemon.env.from_string(template).render(**values)
         if isinstance(template, list):
             return [self.transform(item, values) for item in template]
         if isinstance(template, dict):
             return {key: self.transform(item, values) for key, item in template.items()}
 
-    def transpose(self, block, values):
+        return self.daemon.env.from_string(template).render(**values)
+
+    @staticmethod
+    def transpose(block, values):
         """
         Transposes values
         """
@@ -83,7 +87,8 @@ class CnC:
                 if self.condition(block, block_values):
                     yield copy.deepcopy(block), block_values
 
-    def exclude(self, content):
+    @staticmethod
+    def exclude(content):
         """
         Exclude content from being copied from source to destination based on pattern
         """
@@ -102,7 +107,8 @@ class CnC:
 
         return False
 
-    def preserve(self, content):
+    @staticmethod
+    def preserve(content):
         """
         Preserve content as is without transformation based on pattern
         """
@@ -165,9 +171,9 @@ class CnC:
         if data is None:
             with open(destination, "r") as destination_file:
                 return destination_file.read()
-        else:
-            with open(destination, "w") as destination_file:
-                destination_file.write(data)
+
+        with open(destination, "w") as destination_file:
+            return destination_file.write(data)
 
     def copy(self, content):
         """
@@ -179,7 +185,8 @@ class CnC:
             self.destination(content, path=True)
         )
 
-    def text(self, source, destination, location):
+    @staticmethod
+    def text(source, destination, location):
         """
         Inserts destination into source at location if not present
         """

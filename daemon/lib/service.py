@@ -5,8 +5,6 @@ Main module for daemon
 import os
 import json
 import time
-import shutil
-import fnmatch
 import traceback
 import subprocess
 
@@ -48,19 +46,19 @@ class Daemon:
 
         for key in self.redis.keys("/cnc/*"):
 
-            cnc = json.loads(self.redis.get(key))
+            data = json.loads(self.redis.get(key))
 
-            if cnc["status"] not in ["Created", "Retry"]:
+            if data["status"] not in ["Created", "Retry"]:
                 continue
 
             try:
-                self.cnc.process(cnc)
+                self.cnc.process(data)
             except Exception as exception:
-                cnc["status"] = "Error"
-                cnc["error"] = str(exception)
-                cnc["traceback"] = traceback.format_exc()
+                data["status"] = "Error"
+                data["error"] = str(exception)
+                data["traceback"] = traceback.format_exc()
 
-            self.redis.set(key, json.dumps(cnc), ex=24*60*60)
+            self.redis.set(key, json.dumps(data), ex=24*60*60)
 
     def run(self):
         """
