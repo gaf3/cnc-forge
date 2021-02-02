@@ -25,7 +25,7 @@ FIELDS = [
     {
         "name": "craft",
         "description": "Name of what to craft, used for repos, branches, change requests",
-        "validation": '^[a-z0-9\-]{4,48}$',
+        "validation": r'^[a-z0-9\-]{4,48}$',
         "trigger": True
     }
 ]
@@ -124,8 +124,8 @@ class Forge(flask_restful.Resource):
 
         if id is None:
             return self.list()
-        else:
-            return self.retrieve(id)
+
+        return self.retrieve(id)
 
 
 class CnC(flask_restful.Resource):
@@ -152,7 +152,7 @@ class CnC(flask_restful.Resource):
         fields.extend(forge.get("input", {}).get("fields", []))
 
         if "generate" in forge.get("input", {}):
-            module_name, method_name =  forge["input"]["generate"].rsplit(".", 1)
+            module_name, method_name = forge["input"]["generate"].rsplit(".", 1)
             module = __import__(f"forge.{module_name}")
             method = getattr(getattr(module, module_name), method_name)
             fields.extend(method(fields, values, forge) or [])
@@ -235,8 +235,8 @@ class CnC(flask_restful.Resource):
 
         if id is None:
             return self.list()
-        else:
-            return self.retrieve(id)
+
+        return self.retrieve(id)
 
     def patch(self, id):
         """

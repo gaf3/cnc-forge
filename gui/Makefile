@@ -1,5 +1,5 @@
-ACCOUNT=nandyio
-IMAGE=chore-gui
+ACCOUNT=gaf3
+IMAGE=cnc-forge-gui
 VERSION?=0.1.0
 NAME=$(IMAGE)-$(ACCOUNT)
 
