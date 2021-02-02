@@ -1,18 +1,28 @@
 import unittest
 import unittest.mock
+import freezegun
+
+import json
+import fnmatch
+
+import yaml
+import flask_restful
 
 import service
 
 
 class MockRedis:
 
-    def __init__(self, host):
+    def __init__(self, host, **kwargs):
 
         self.host = host
 
         self.data = {}
         self.expires = {}
         self.messages = []
+
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
     def __str__(self):
 
@@ -32,7 +42,24 @@ class MockRedis:
         self.data.setdefault(key, [])
         self.data[key].append(value)
 
+    def keys(self, pattern):
+
+        for key in sorted(self.data.keys()):
+            if fnmatch.fnmatch(key, pattern):
+                yield key
+
+    def delete(self, key):
+
+        if key in self.data:
+            del self.data[key]
+
+        if key in self.expires:
+            del self.expires[key]
+
+
 class TestRestful(unittest.TestCase):
+
+    maxDiff = None
 
     @unittest.mock.patch('service.open', create=True)
     @unittest.mock.patch("redis.Redis", MockRedis)
@@ -45,7 +72,7 @@ class TestRestful(unittest.TestCase):
         self.app = service.build()
         self.api = self.app.test_client()
 
-    def assertFields(self, fields, data):
+    def assertFields(self, fields, data, **kwargs):
         """
         Asserts fields object in list form equals data
         """
@@ -57,6 +84,9 @@ class TestRestful(unittest.TestCase):
         for index, field in enumerate(items):
             self.assertEqual(field, data[index], index)
 
+        for key in kwargs:
+            self.assertEqual(getattr(fields, key), kwargs[key], key)
+
     def assertStatusValue(self, response, code, key, value):
         """
         Assert a response's code and keyed json value are equal.
@@ -67,7 +97,7 @@ class TestRestful(unittest.TestCase):
         self.assertEqual(response.status_code, code, response.json)
         self.assertEqual(response.json[key], value)
 
-    def assertStatusFields(self, response, code, fields, errors=None):
+    def assertStatusFields(self, response, code, fields, errors=None, **kwargs):
         """
         Assert a response's code and keyed json fields are equal.
         Good with checking API responses  of options with an outout
@@ -81,12 +111,15 @@ class TestRestful(unittest.TestCase):
         for index, field in enumerate(fields):
             self.assertEqual(field, response.json['fields'][index], index)
 
-        if errors or "errors" in response.json:
+        if errors or response.json.get("errors", []) != []:
 
             self.assertIsNotNone(errors, response.json)
             self.assertIn("errors", response.json, response.json)
 
             self.assertEqual(errors, response.json['errors'], "errors")
+
+        for key in kwargs:
+            self.assertEqual(response.json.get(key), kwargs[key], key)
 
 
 class TestAPI(TestRestful):
@@ -102,13 +135,594 @@ class TestAPI(TestRestful):
         app = service.build()
 
         self.assertEqual(app.name, "cnc-forge-api")
+        self.assertEqual(app.redis.host, "redi.com")
+        self.assertEqual(app.redis.charset, "utf-8")
+        self.assertTrue(app.redis.decode_responses)
 
         mock_open.assert_has_calls([
             unittest.mock.call("/opt/service/secret/redis.json", "r")
         ])
+
 
 class TestHealth(TestRestful):
 
     def test_get(self):
 
         self.assertStatusValue(self.api.get("/health"), 200, "message", "OK")
+
+
+class TestForge(TestRestful):
+
+    @unittest.mock.patch('service.glob.glob')
+    @unittest.mock.patch('service.open', create=True)
+    def test_forges(self, mock_open, mock_glob):
+
+        mock_glob.return_value = [
+            "/opt/service/forge/there.yaml",
+            "/opt/service/forge/here.yaml"
+        ]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: There').return_value
+        ]
+
+        self.assertEqual(service.Forge.forges(), {
+            "here": "Here",
+            "there": "There"
+        })
+
+        mock_glob.assert_called_with("/opt/service/forge/*.yaml")
+
+        mock_open.assert_has_calls([
+            unittest.mock.call("/opt/service/forge/here.yaml", "r"),
+            unittest.mock.call("/opt/service/forge/there.yaml", "r")
+        ])
+
+    @unittest.mock.patch('service.open', create=True)
+    def test_forge(self, mock_open):
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='description: Here').return_value
+        ]
+
+        self.assertEqual(service.Forge.forge("here"), {
+            "id": "here",
+            "description": "Here"
+        })
+
+        mock_open.assert_has_calls([
+            unittest.mock.call("/opt/service/forge/here.yaml", "r")
+        ])
+
+    @unittest.mock.patch('service.glob.glob')
+    @unittest.mock.patch('service.open', create=True)
+    def test_list(self, mock_open, mock_glob):
+
+        mock_glob.return_value = [
+            "/opt/service/forge/there.yaml",
+            "/opt/service/forge/here.yaml"
+        ]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: There').return_value,
+            unittest.mock.mock_open(read_data='description: Here').return_value
+        ]
+
+        self.assertEqual(service.Forge.list(), {
+            "forges": [
+                {
+                    "id": "here",
+                    "description": "Here"
+                },
+                {
+                    "id": "there",
+                    "description": "There"
+                }
+            ]
+        })
+
+    @unittest.mock.patch('service.glob.glob')
+    @unittest.mock.patch('service.open', create=True)
+    def test_retrieve(self, mock_open, mock_glob):
+
+        mock_glob.return_value = [
+            "/opt/service/forge/here.yaml"
+        ]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: Here').return_value
+        ]
+
+        self.assertEqual(service.Forge.retrieve("here"), {
+            "forge": {
+                "id": "here",
+                "description": "Here"
+            },
+            "yaml": "description: Here\nid: here\n"
+        })
+
+        self.assertEqual(service.Forge.retrieve("there"), ({
+            "message": "forge 'there' not found"
+        }, 404))
+
+    @unittest.mock.patch('service.glob.glob')
+    @unittest.mock.patch('service.open', create=True)
+    def test_get(self, mock_open, mock_glob):
+
+        mock_glob.return_value = [
+            "/opt/service/forge/there.yaml",
+            "/opt/service/forge/here.yaml"
+        ]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: There').return_value,
+            unittest.mock.mock_open(read_data='description: Here').return_value,
+            unittest.mock.mock_open(read_data='description: There').return_value,
+            unittest.mock.mock_open(read_data='description: Here').return_value
+        ]
+
+        self.assertStatusValue(self.api.get("/forge"), 200, "forges", [
+            {
+                "id": "here",
+                "description": "Here"
+            },
+            {
+                "id": "there",
+                "description": "There"
+            }
+        ])
+
+        response = self.api.get("/forge/here")
+
+        self.assertStatusValue(response, 200, "forge", {
+            "id": "here",
+            "description": "Here"
+        })
+
+        self.assertStatusValue(response, 200, "yaml", "description: Here\nid: here\n")
+
+
+class TestCnC(TestRestful):
+
+    def test_fields(self):
+
+        forge = {
+            "id": "here",
+            "description": "Here"
+        }
+
+        fields = service.CnC.fields(forge, {})
+
+        self.assertFields(fields, [
+            {
+                "name": "forge",
+                "description": "What to craft",
+                "readonly": True,
+                "value": "here"
+            },
+            {
+                "name": "craft",
+                "description": "Name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z0-9\-]{4,48}$',
+                "trigger": True
+            }
+        ],ready=True)
+
+        forge = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            }
+        }
+
+        fields = service.CnC.fields(forge, {"craft": "fun", "some": "thing"})
+
+        self.assertFields(fields, [
+            {
+                "name": "forge",
+                "description": "What to craft",
+                "readonly": True,
+                "value": "here"
+            },
+            {
+                "name": "craft",
+                "description": "Name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z0-9\-]{4,48}$',
+                "trigger": True,
+                "value": "fun"
+            },
+            {
+                "name":"some",
+                "value":"thing"
+            }
+        ])
+
+    @unittest.mock.patch("service.Forge.forge")
+    @unittest.mock.patch("service.Forge.forges")
+    def test_options(self, mock_forges, mock_forge):
+
+        mock_forges.return_value = {}
+
+        self.assertStatusValue(self.api.options("/cnc/nope"), 404, "message", "forge 'nope' not found")
+
+        mock_forges.return_value = {"here": True}
+
+        mock_forge.return_value = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            }
+        }
+
+        response = self.api.options("/cnc/here", json={
+            "values": {
+                "craft": "funtime",
+                "some": "thing"
+            }
+        })
+
+        self.assertStatusFields(response, 200, [
+            {
+                "name": "forge",
+                "description": "What to craft",
+                "readonly": True,
+                "value": "here"
+            },
+            {
+                "name": "craft",
+                "description": "Name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z0-9\-]{4,48}$',
+                "trigger": True,
+                "value": "funtime"
+            },
+            {
+                "name":"some",
+                "value":"thing"
+            }
+        ], ready=True, valid=True)
+
+    @freezegun.freeze_time("2020-11-02") # 1604275200
+    @unittest.mock.patch("service.Forge.forge")
+    @unittest.mock.patch("service.Forge.forges")
+    def test_post(self, mock_forges, mock_forge):
+
+        mock_forges.return_value = {}
+
+        self.assertStatusValue(self.api.post("/cnc/nope"), 404, "message", "forge 'nope' not found")
+
+        mock_forges.return_value = {"here": True}
+
+        mock_forge.return_value = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            }
+        }
+
+        response = self.api.post("/cnc/here", json={
+            "values": {
+                "craft": "fun",
+                "some": "thing"
+            }
+        })
+
+        self.assertStatusFields(response, 400, [
+            {
+                "name": "forge",
+                "description": "What to craft",
+                "readonly": True,
+                "value": "here"
+            },
+            {
+                "name": "craft",
+                "description": "Name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z0-9\-]{4,48}$',
+                "trigger": True,
+                "value": "fun",
+                "errors": ["must match '^[a-z0-9\\-]{4,48}$'"]
+            },
+            {
+                "name":"some",
+                "value":"thing"
+            }
+        ], ready=True, valid=False)
+
+        response = self.api.post("/cnc/here", json={
+            "values": {
+                "craft": "funtime",
+                "some": "thing"
+            }
+        })
+
+        self.assertStatusValue(response, 202, "cnc", {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertEqual(json.loads(self.app.redis.data["/cnc/funtime-here-1604275200"]), {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertEqual(self.app.redis.expires["/cnc/funtime-here-1604275200"], 86400)
+
+    def test_list(self):
+
+        class TestList(flask_restful.Resource):
+
+            def get(self):
+
+                return service.CnC.list()
+
+        self.app.api.add_resource(TestList, '/test-list')
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertStatusValue(self.api.get("/test-list"), 200, "cncs", [
+            {"id": "funtime-here-1604275200"}
+        ])
+
+    def test_retrieve(self):
+
+        class TestRetrieve(flask_restful.Resource):
+
+            def get(self, id):
+
+                return service.CnC.retrieve(id)
+
+        self.app.api.add_resource(TestRetrieve, '/test-retrieve/<id>')
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertStatusValue(self.api.get("/test-retrieve/nope"), 404, "message", "cnc 'nope' not found")
+
+        response = self.api.get("/test-retrieve/funtime-here-1604275200")
+
+        self.assertStatusValue(response, 200, "cnc", {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertStatusValue(response, 200, "yaml", yaml.safe_dump({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        }))
+
+    def test_get(self):
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+        self.assertStatusValue(self.api.get("/cnc"), 200, "cncs", [
+            {"id": "funtime-here-1604275200"}
+        ])
+
+        self.assertStatusValue(self.api.get("/cnc/funtime-here-1604275200"), 200, "cnc", {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created"
+        })
+
+    def test_patch(self):
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created",
+            "traceback": "scroll",
+            "content": "monetized"
+        })
+
+        response = self.api.patch("/cnc/funtime-here-1604275200")
+
+        self.assertStatusValue(response, 201, "cnc", {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Retry"
+        })
+
+        self.assertStatusValue(response, 201, "yaml", yaml.safe_dump({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Retry"
+        }))
+
+        self.assertStatusValue(self.api.patch("/cnc/nope"), 404, "message", "cnc 'nope' not found")
+
+
+    def test_delete(self):
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created",
+            "traceback": "scroll",
+            "content": "monetized"
+        })
+
+        response = self.api.delete("/cnc/funtime-here-1604275200")
+
+        self.assertStatusValue(response, 201, "deleted", 1)
+
+        self.assertEqual(self.app.redis.data, {})
+
+        self.assertStatusValue(self.api.delete("/cnc/nope"), 404, "message", "cnc 'nope' not found")
