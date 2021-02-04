@@ -267,6 +267,52 @@ class CnC:
             os.stat(self.source(content, path=True)).st_mode
         )
 
+    def directory(self, content, values):
+        """
+        Craft a directory
+        """
+
+        # Iterate though the items found as long as we're not .git
+
+        if content["source"].split("/")[-1] != ".git":
+            for item in os.listdir(self.source(content, path=True)):
+                self.craft({**content,
+                    "source": f"{content['source']}/{item}" if content['source'] else item,
+                    "destination": f"{content['destination']}/{item}" if content['destination'] else item
+                }, values)
+
+    def file(self, content, values):
+        """
+        Craft a file
+        """
+
+        # If we're preserving, just copy, else load source and transformation to destination
+
+        if self.preserve(content):
+            self.copy(content)
+            return
+
+        source = self.transform(self.source(content), values)
+
+        # See if we're injecting anywhere, else just overwrite
+
+        mode = False
+
+        if "text" in content:
+            destination = self.text(source, self.destination(content), content["text"])
+        elif "json" in content:
+            destination = self.json(source, self.destination(content), content["json"])
+        elif "yaml" in content:
+            destination = self.yaml(source, self.destination(content), content["yaml"])
+        else:
+            mode = True
+            destination = source
+
+        self.destination(content, destination)
+
+        if mode:
+            self.mode(content)
+
     def craft(self, content, values):
         """
         Craft changes, the actual work of creating desitnations from sources
@@ -292,44 +338,11 @@ class CnC:
 
         if os.path.isdir(self.source(content, path=True)):
 
-            # Iterate though the items found as long as we're not .git
+            self.directory(content, values)
 
-            if content["source"].split("/")[-1] != ".git":
-                for item in os.listdir(self.source(content, path=True)):
-                    self.craft({**content,
-                        "source": f"{content['source']}/{item}" if content['source'] else item,
-                        "destination": f"{content['destination']}/{item}" if content['destination'] else item
-                    }, values)
         else:
 
-            # If we're preserving, just copy, else load source and transformation to destination
-
-            if self.preserve(content):
-
-                self.copy(content)
-
-            else:
-
-                source = self.transform(self.source(content), values)
-
-                # See if we're injecting anywhere, else just overwrite
-
-                mode = False
-
-                if "text" in content:
-                    destination = self.text(source, self.destination(content), content["text"])
-                elif "json" in content:
-                    destination = self.json(source, self.destination(content), content["json"])
-                elif "yaml" in content:
-                    destination = self.yaml(source, self.destination(content), content["yaml"])
-                else:
-                    mode = True
-                    destination = source
-
-                self.destination(content, destination)
-
-                if mode:
-                    self.mode(content)
+            self.file(content, values)
 
         # It worked, so delete the content
 
