@@ -27,6 +27,7 @@ FIELDS = [
         "name": "craft",
         "description": "name of what to craft, used for repos, branches, change requests",
         "validation": r'^[a-z][a-z0-9\-]{3,47}$',
+        "required": True,
         "trigger": True
     }
 ]
@@ -159,12 +160,25 @@ class CnC(flask_restful.Resource):
 
         return int(f"{ord(words[0][0])}{ord(words[1][0])}")
 
-    def field(self, fields, field):
+    def values(self, fields):
         """
-        Adds a field if requires and conditions are satsified
+        Gets the current values from the fields so far
         """
 
-        values = {existing.name: existing.value for existing in fields}
+        values = {}
+
+        for field in fields:
+            if field.value is None and field.default is not None:
+                values[field.name] = field.default
+            else:
+                values[field.name] = field.value
+
+        return values
+
+    def satisfied(self, fields, field, values):
+        """
+        Determines with the criteria for a field are satisfied
+        """
 
         requires = field.get("requires", [])
 
@@ -172,10 +186,24 @@ class CnC(flask_restful.Resource):
             requires = [requires]
 
         for require in requires:
-            if require not in fields or not opengui.Field(**fields[require].to_dict()).validate():
-                return
+            if require not in fields or not fields[require].validate(store=False):
+                return False
 
         if "condition" in field and self.env.from_string(field["condition"]).render(**values) != "True":
+            return False
+
+        return True
+
+    def field(self, fields, field):
+        """
+        Adds a field if requires and conditions are satsified
+        """
+
+        values = self.values(fields)
+
+        if not self.satisfied(fields, field, values):
+            if field["name"] in fields.values:
+                del fields.values[field["name"]]
             return
 
         default = field.get("default")

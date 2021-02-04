@@ -302,7 +302,21 @@ class TestCnC(TestRestful):
         self.assertEqual(service.CnC.port("a-b"), 6566)
         self.assertEqual(service.CnC.port("ac"), 6567)
 
-    def test_field(self):
+    def test_values(self):
+
+        cnc = service.CnC()
+
+        fields = opengui.Fields(fields=[
+            {"name": "none"},
+            {"name": "some", "default": "fun"}
+        ])
+
+        self.assertEqual(cnc.values(fields), {
+            "none": None,
+            "some": "fun"
+        })
+
+    def test_satisfied(self):
 
         cnc = service.CnC()
 
@@ -314,10 +328,9 @@ class TestCnC(TestRestful):
             "name": "moar",
             "requires": "some"
         }
+        values = {}
 
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 0)
+        self.assertFalse(cnc.satisfied(fields, field, values))
 
         # invalid
 
@@ -326,23 +339,59 @@ class TestCnC(TestRestful):
             "required": True
         })
 
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 1)
+        self.assertFalse(cnc.satisfied(fields, field, values))
 
         # requirement met
 
         fields["some"].value = "fun"
+        values["some"] = "fun"
 
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 2)
+        self.assertTrue(cnc.satisfied(fields, field, values))
 
         # unsatisfied
 
         field = {
             "name": "happy",
             "condition": "{{ some == 'funny' }}",
+            "requires": "some"
+        }
+
+        self.assertFalse(cnc.satisfied(fields, field, values))
+
+        # satisfied
+
+        values["some"] = "funny"
+
+        self.assertTrue(cnc.satisfied(fields, field, values))
+
+    def test_field(self):
+
+        cnc = service.CnC()
+
+        fields = opengui.Fields(values={"moar": "lees"})
+
+        # clear
+
+        field = {
+            "name": "moar",
+            "requires": "some"
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 0)
+        self.assertEqual(fields.values, {})
+
+        # default
+
+        fields.append({
+            "name": "some",
+            "required": True,
+            "value": "fun"
+        })
+
+        field = {
+            "name": "happy",
             "default": "{{ port(some) }} bone",
             "requires": "some"
         }
@@ -350,14 +399,6 @@ class TestCnC(TestRestful):
         cnc.field(fields, field)
 
         self.assertEqual(len(fields), 2)
-
-        # satisfied
-
-        fields["some"].value = "funny"
-
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 3)
         self.assertEqual(fields["happy"].default, "7085 bone")
 
     def test_fields(self):
@@ -382,6 +423,7 @@ class TestCnC(TestRestful):
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
                 "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "required": True,
                 "trigger": True
             }
         ],ready=True)
@@ -411,6 +453,7 @@ class TestCnC(TestRestful):
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
                 "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "required": True,
                 "trigger": True,
                 "value": "fun"
             },
@@ -474,6 +517,7 @@ class TestCnC(TestRestful):
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
                 "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "required": True,
                 "trigger": True,
                 "value": "funtime"
             },
@@ -524,6 +568,7 @@ class TestCnC(TestRestful):
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
                 "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "required": True,
                 "trigger": True,
                 "value": "fun",
                 "errors": ["must match '^[a-z][a-z0-9\\-]{3,47}$'"]

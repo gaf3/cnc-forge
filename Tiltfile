@@ -10,7 +10,7 @@ local_resource(
 )
 
 local_resource(
-    name='forge',
+    name='forge', deps=["forge/"],
     cmd='kubectl -n cnc-forge create configmap forge --from-file forge/ --dry-run=client -o yaml | kubectl apply -f -'
 )
 
