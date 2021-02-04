@@ -172,13 +172,20 @@ class GitHub:
         Clones a repo for a change block
         """
 
+        github["repo"] = self.repo(github["repo"], ensure=False)
+
+        # If this is the last repo/branch, just repo it again
+
+        if cnc.data.get("change") == github:
+            return
+
+        cnc.data["change"] = github
+
         os.chdir(cnc.base())
 
         source = f"{cnc.base()}/source"
 
         shutil.rmtree(source, ignore_errors=True)
-
-        github["repo"] = self.repo(github["repo"], ensure=False)
 
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git source", shell=True))
 

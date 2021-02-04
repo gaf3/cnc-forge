@@ -341,7 +341,7 @@ class TestGitHub(unittest.TestCase):
         # different branch
 
         cnc = unittest.mock.MagicMock()
-
+        cnc.data = {}
         cnc.base.return_value = "noise"
 
         github = {
@@ -361,6 +361,8 @@ class TestGitHub(unittest.TestCase):
             "branch": "ayup"
         })
 
+        self.assertEqual(cnc.data["change"], github)
+
         mock_chdir.assert_has_calls([
             unittest.mock.call("noise"),
             unittest.mock.call("noise/source")
@@ -374,6 +376,14 @@ class TestGitHub(unittest.TestCase):
             unittest.mock.call("cloned"),
             unittest.mock.call("checked out")
         ])
+
+        # again
+
+        mock_chdir.reset_mock()
+
+        self.github.change(cnc, github)
+
+        mock_chdir.assert_not_called()
 
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("os.path.exists")
