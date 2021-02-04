@@ -603,7 +603,8 @@ class TestCnC(TestRestful):
                 "some": "thing",
                 "cnc": "fun-time-here-1604275200"
             },
-            "status": "Created"
+            "status": "Created",
+            "test": False
         })
 
         self.assertEqual(json.loads(self.app.redis.data["/cnc/fun-time-here-1604275200"]), {
@@ -623,10 +624,40 @@ class TestCnC(TestRestful):
                 "some": "thing",
                 "cnc": "fun-time-here-1604275200"
             },
-            "status": "Created"
+            "status": "Created",
+            "test": False
         })
 
         self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
+
+        response = self.api.post("/cnc/here", json={
+            "values": {
+                "craft": "fun-time",
+                "some": "thing"
+            },
+            "test": True
+        })
+
+        self.assertStatusValue(response, 202, "cnc", {
+            "id": "fun-time-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "fun-time",
+                "code": "fun_time",
+                "some": "thing",
+                "cnc": "fun-time-here-1604275200"
+            },
+            "status": "Created",
+            "test": True
+        })
 
     def test_list(self):
 

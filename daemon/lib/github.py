@@ -105,24 +105,6 @@ class GitHub:
 
         return hooks
 
-    def branch(self, repo, branch):
-        """
-        Ensures a branch exists
-        """
-
-        for exists in self.iterate(f"repos/{repo['full_name']}/branches"):
-            if exists["name"] == branch:
-                return branch
-
-        sha = self.request("GET", f"repos/{repo['full_name']}/branches/{repo['base_branch']}")["commit"]["sha"]
-
-        self.request("POST", f"repos/{repo['full_name']}/git/refs", json={
-            "ref": f"refs/heads/{branch}",
-            "sha": sha
-        })
-
-        return branch
-
     def pull_request(self, repo, branch, pull_request):
         """
         Ensures a pull request exists
@@ -151,24 +133,31 @@ class GitHub:
 
     def clone(self, cnc, github):
         """
-        Clones a repo for a code block
+        Clones a repo for a code block unless we're testing, then just creates a directory
         """
 
-        github["repo"] = self.repo(github["repo"])
+        os.chdir(cnc.base())
+
+        destination = f"{cnc.base()}/destination"
+
+        shutil.rmtree(destination, ignore_errors=True)
+
+        # Get the repo info and don't bother creating if we're testing
+
+        github["repo"] = self.repo(github["repo"], ensure=not cnc.data["test"])
+
+        # If there's not base_branch, there's no repo, so just make the destination directory and split
+
+        if "base_branch" not in github["repo"]:
+            os.makedirs(destination)
+            return
 
         if "hook" in github:
             github["hook"] = self.hook(github["repo"], github["hook"])
 
-        os.chdir(cnc.base())
-
-        destination = cnc.destination("", path=True)
-
-        shutil.rmtree(destination, ignore_errors=True)
-
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git destination", shell=True))
 
-        if github.get("branch") != github["repo"]["base_branch"]:
-            github["branch"] = self.branch(github["repo"], github.get("branch", cnc.data["id"]))
+        github.setdefault("branch", cnc.data["id"])
 
         os.chdir(destination)
 
@@ -183,13 +172,13 @@ class GitHub:
         Clones a repo for a change block
         """
 
-        github["repo"] = self.repo(github["repo"], ensure=False)
-
         os.chdir(cnc.base())
 
-        source = cnc.source("", path=True)
+        source = f"{cnc.base()}/source"
 
         shutil.rmtree(source, ignore_errors=True)
+
+        github["repo"] = self.repo(github["repo"], ensure=False)
 
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git source", shell=True))
 
@@ -202,9 +191,22 @@ class GitHub:
         Commits a repo for a code block
         """
 
-        destination = cnc.destination("", path=True)
+        destination = f"{cnc.base()}/destination"
 
         os.chdir(destination)
+
+        # If we're testing, move a code-# dir
+
+        if cnc.data["test"]:
+
+            code = 0
+
+            while os.path.exists(f"{cnc.base()}/code-{code}"):
+                code += 1
+
+            os.rename(destination, f"{cnc.base()}/code-{code}")
+
+            return
 
         print(subprocess.check_output("git add .", shell=True))
 

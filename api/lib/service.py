@@ -5,6 +5,7 @@ Module for the service
 # pylint: disable=no-self-use
 
 import time
+import copy
 import glob
 import json
 
@@ -270,8 +271,9 @@ class CnC(flask_restful.Resource):
         if not fields.validate():
             return fields.to_dict(), 400
 
-        cnc = forge
+        cnc = copy.deepcopy(forge)
 
+        cnc["test"] = flask.request.json.get("test", False)
         cnc["values"] = {field.name: field.value for field in fields}
         cnc["values"]["code"] = cnc["values"]["craft"].replace('-', '_')
         cnc["status"] = "Created"

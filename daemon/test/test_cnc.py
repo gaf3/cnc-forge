@@ -458,6 +458,23 @@ class TestCnC(unittest.TestCase):
 
         mock_glob.return_value = ["/opt/service/cnc/sweat/destination/a/b/c"]
 
+        # Root
+
+        content = {
+            "source": "/"
+        }
+
+        self.cnc.content(content, {})
+
+        self.cnc.craft.assert_called_once_with({
+            "source": "",
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, {})
+
         # Minimal
 
         content = {
@@ -466,7 +483,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.content(content, {"start": "a/b"})
 
-        self.cnc.craft.assert_called_once_with({
+        self.cnc.craft.assert_called_with({
             "source": "a/b/c",
             "destination": "a/b/c",
             "include": [],
@@ -480,7 +497,7 @@ class TestCnC(unittest.TestCase):
         content = {
             "source": "{{ start }}/c",
             "destination": "{{ start }}/d",
-            "include": "e",
+            "include": "e/",
             "exclude": "f",
             "preserve": "g",
             "transform": "h"
@@ -573,6 +590,8 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.code = unittest.mock.MagicMock()
 
+        # Testing
+
         data = {
             "id": "sweat",
             "output": {
@@ -581,7 +600,8 @@ class TestCnC(unittest.TestCase):
                     {"condition": "{{ here == 'here' }}"}
                 ]
             },
-            "values": {"here": "there"}
+            "values": {"here": "there"},
+            "test": True
         }
 
         self.cnc.process(data)
@@ -599,14 +619,39 @@ class TestCnC(unittest.TestCase):
                 {"condition": "{{ here == 'there' }}"},
                 {"condition": "{{ here == 'here' }}"}
             ],
-            "status": "Completed"
+            "status": "Completed",
+            "test": True
         })
 
-        mock_makedirs.assert_called_once_with("/opt/service/cnc/sweat", exist_ok=True)
+        mock_makedirs.assert_called_once_with("/opt/service/cnc/sweat")
 
         self.cnc.code.assert_called_once_with(
             {"condition": "{{ here == 'there' }}"},
             {"here": "there"}
         )
 
-        mock_rmtree.assert_called_once_with("/opt/service/cnc/sweat")
+        mock_rmtree.assert_has_calls([
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),
+            unittest.mock.call("/opt/service/cnc/sweat/source", ignore_errors=True)
+        ])
+
+        # Committing
+
+        data = {
+            "id": "sweat",
+            "output": {
+                "code": [
+                    {"condition": "{{ here == 'there' }}"},
+                    {"condition": "{{ here == 'here' }}"}
+                ]
+            },
+            "values": {"here": "there"},
+            "test": False
+        }
+
+        self.cnc.process(data)
+
+        mock_rmtree.assert_has_calls([
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True)
+        ])

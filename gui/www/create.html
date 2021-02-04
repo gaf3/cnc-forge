@@ -4,8 +4,11 @@
         Cancel
     </button>
     {{?it.ready}}
-    <button type="button" OnClick="DRApp.current.controller.create_save();" class="uk-button uk-button-primary">
-        Create
+    <button type="button" OnClick="DRApp.current.controller.create_save(true);" class="uk-button uk-button-primary">
+        Try
+    </button>
+    <button type="button" OnClick="DRApp.current.controller.create_save(false);" class="uk-button uk-button-primary">
+        Commit
     </button>
     {{?}}
     {{#def.Form}}
