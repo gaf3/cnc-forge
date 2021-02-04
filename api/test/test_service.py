@@ -8,6 +8,8 @@ import fnmatch
 import yaml
 import flask_restful
 
+import opengui
+
 import service
 
 
@@ -289,26 +291,97 @@ class TestForge(TestRestful):
 
 class TestCnC(TestRestful):
 
+    def test___init__(self):
+
+        cnc = service.CnC()
+
+        self.assertIn("port", cnc.env.globals)
+
+    def test_port(self):
+
+        self.assertEqual(service.CnC.port("a-b"), 6566)
+        self.assertEqual(service.CnC.port("ac"), 6567)
+
+    def test_field(self):
+
+        cnc = service.CnC()
+
+        fields = opengui.Fields()
+
+        # missing
+
+        field = {
+            "name": "moar",
+            "requires": "some"
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 0)
+
+        # invalid
+
+        fields.append({
+            "name": "some",
+            "required": True
+        })
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 1)
+
+        # requirement met
+
+        fields["some"].value = "fun"
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 2)
+
+        # unsatisfied
+
+        field = {
+            "name": "happy",
+            "condition": "{{ some == 'funny' }}",
+            "default": "{{ port(some) }} bone",
+            "requires": "some"
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 2)
+
+        # satisfied
+
+        fields["some"].value = "funny"
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields["happy"].default, "7085 bone")
+
     def test_fields(self):
+
+        cnc = service.CnC()
 
         forge = {
             "id": "here",
             "description": "Here"
         }
 
-        fields = service.CnC.fields(forge, {})
+        fields = cnc.fields(forge, {})
 
         self.assertFields(fields, [
             {
                 "name": "forge",
-                "description": "What to craft",
+                "description": "what to craft from",
                 "readonly": True,
                 "value": "here"
             },
             {
                 "name": "craft",
-                "description": "Name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z0-9\-]{4,48}$',
+                "description": "name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z][a-z0-9\-]{3,47}$',
                 "trigger": True
             }
         ],ready=True)
@@ -325,19 +398,19 @@ class TestCnC(TestRestful):
             }
         }
 
-        fields = service.CnC.fields(forge, {"craft": "fun", "some": "thing"})
+        fields = cnc.fields(forge, {"craft": "fun", "some": "thing"})
 
         self.assertFields(fields, [
             {
                 "name": "forge",
-                "description": "What to craft",
+                "description": "what to craft from",
                 "readonly": True,
                 "value": "here"
             },
             {
                 "name": "craft",
-                "description": "Name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z0-9\-]{4,48}$',
+                "description": "name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z][a-z0-9\-]{3,47}$',
                 "trigger": True,
                 "value": "fun"
             },
@@ -346,6 +419,20 @@ class TestCnC(TestRestful):
                 "value":"thing"
             }
         ])
+
+        forge = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "craft"
+                    }
+                ]
+            }
+        }
+
+        self.assertRaisesRegex(Exception, "field name 'craft' is reserved", cnc.fields, forge, {})
 
     @unittest.mock.patch("service.Forge.forge")
     @unittest.mock.patch("service.Forge.forges")
@@ -379,14 +466,14 @@ class TestCnC(TestRestful):
         self.assertStatusFields(response, 200, [
             {
                 "name": "forge",
-                "description": "What to craft",
+                "description": "what to craft from",
                 "readonly": True,
                 "value": "here"
             },
             {
                 "name": "craft",
-                "description": "Name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z0-9\-]{4,48}$',
+                "description": "name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z][a-z0-9\-]{3,47}$',
                 "trigger": True,
                 "value": "funtime"
             },
@@ -429,17 +516,17 @@ class TestCnC(TestRestful):
         self.assertStatusFields(response, 400, [
             {
                 "name": "forge",
-                "description": "What to craft",
+                "description": "what to craft from",
                 "readonly": True,
                 "value": "here"
             },
             {
                 "name": "craft",
-                "description": "Name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z0-9\-]{4,48}$',
+                "description": "name of what to craft, used for repos, branches, change requests",
+                "validation": '^[a-z][a-z0-9\-]{3,47}$',
                 "trigger": True,
                 "value": "fun",
-                "errors": ["must match '^[a-z0-9\\-]{4,48}$'"]
+                "errors": ["must match '^[a-z][a-z0-9\\-]{3,47}$'"]
             },
             {
                 "name":"some",
@@ -449,13 +536,13 @@ class TestCnC(TestRestful):
 
         response = self.api.post("/cnc/here", json={
             "values": {
-                "craft": "funtime",
+                "craft": "fun-time",
                 "some": "thing"
             }
         })
 
         self.assertStatusValue(response, 202, "cnc", {
-            "id": "funtime-here-1604275200",
+            "id": "fun-time-here-1604275200",
             "description": "Here",
             "input": {
                 "fields": [
@@ -466,14 +553,16 @@ class TestCnC(TestRestful):
             },
             "values": {
                 "forge": "here",
-                "craft": "funtime",
-                "some": "thing"
+                "craft": "fun-time",
+                "code": "fun_time",
+                "some": "thing",
+                "cnc": "fun-time-here-1604275200"
             },
             "status": "Created"
         })
 
-        self.assertEqual(json.loads(self.app.redis.data["/cnc/funtime-here-1604275200"]), {
-            "id": "funtime-here-1604275200",
+        self.assertEqual(json.loads(self.app.redis.data["/cnc/fun-time-here-1604275200"]), {
+            "id": "fun-time-here-1604275200",
             "description": "Here",
             "input": {
                 "fields": [
@@ -484,13 +573,15 @@ class TestCnC(TestRestful):
             },
             "values": {
                 "forge": "here",
-                "craft": "funtime",
-                "some": "thing"
+                "craft": "fun-time",
+                "code": "fun_time",
+                "some": "thing",
+                "cnc": "fun-time-here-1604275200"
             },
             "status": "Created"
         })
 
-        self.assertEqual(self.app.redis.expires["/cnc/funtime-here-1604275200"], 86400)
+        self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
 
     def test_list(self):
 

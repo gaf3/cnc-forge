@@ -41,9 +41,16 @@ Eventual format
 ```yaml
 description: # Describes the Forge
 input: # What to input to the Forge
+  extra: # Extra common/calculated fields to use
   fields: # Fields to get input from (OpenGUI)
-  generate: # Method to add fields or append to
-  validate: # Method to call to validate fields
+  - *: Standard OpenGUI attributes
+    name: code - craft first two letters to ASCII port (to prevent local collisions)
+    name: port - Will default to craft dashes replaced with underscores
+    name: ticket - Ticket to use in making branch
+    description: Description for the field
+    labels: labels to use with options
+    requires: Other fields that must exist
+    condition: Condition to satisfy for field
 output: # The Code and Changes to craft.
   code: # Repo or PR to create from
   - github: # Block to describe how to interact with github
@@ -60,19 +67,16 @@ output: # The Code and Changes to craft.
         exclude: # Exclude glob pattern
         include: # Override exclude glob pattern
         preserve: # Don't transform with Jinja2 templating glob pattern
-        transform: # Override transform glob pattern
+        transform: # Override preserve glob pattern
+        transpose: # Set new values with old
         condition: # Condition to satisfy
         iterate: # Iterate from a list variable into a new variable
-        generate: # Generate changes with a function
       condition: # Condition to satisfy
       iterate: # Iterate from a list variable into a new variable
-      generate: # Generate changes with a function
     condition: # Condition to satisfy
     iterate: # Iterate from a list variable into a new variable
-    generate: # Generate changes with a function
   condition: # Condition to satisfy
   iterate: # Iterate from a list variable into a new variable
-  generate: # Generate changes with a function
 ```
 
 Some experiental ideas
