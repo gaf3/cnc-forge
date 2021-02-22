@@ -5,6 +5,7 @@ Module for the service
 # pylint: disable=no-self-use
 
 import time
+import copy
 import glob
 import json
 
@@ -14,20 +15,29 @@ import redis
 import flask
 import flask_restful
 
+import jinja2
 import opengui
 
 FIELDS = [
     {
         "name": "forge",
-        "description": "What to craft",
+        "description": "what to craft from",
         "readonly": True
     },
     {
         "name": "craft",
-        "description": "Name of what to craft, used for repos, branches, change requests",
-        "validation": r'^[a-z0-9\-]{4,48}$',
+        "description": "name of what to craft, used for repos, branches, change requests",
+        "validation": r'^[a-z][a-z0-9\-]{3,47}$',
+        "required": True,
         "trigger": True
     }
+]
+
+RESERVED = [
+    "forge",
+    "craft",
+    "code",
+    "cnc"
 ]
 
 def build():
@@ -133,8 +143,78 @@ class CnC(flask_restful.Resource):
     Class of actions to force code and/or chagnes from Forge's.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.env = jinja2.Environment(keep_trailing_newline=True)
+        self.env.globals.update(port=self.port)
+
     @staticmethod
-    def fields(forge, values):
+    def port(name):
+        """
+        Calculate a port vsalue based of a name
+        """
+
+        words = name.upper().split('-', 1)
+
+        if len(words) == 1:
+            words.append(words[0][1])
+
+        return int(f"{ord(words[0][0])}{ord(words[1][0])}")
+
+    def values(self, fields):
+        """
+        Gets the current values from the fields so far
+        """
+
+        values = {}
+
+        for field in fields:
+            if field.value is None and field.default is not None:
+                values[field.name] = field.default
+            else:
+                values[field.name] = field.value
+
+        return values
+
+    def satisfied(self, fields, field, values):
+        """
+        Determines with the criteria for a field are satisfied
+        """
+
+        requires = field.get("requires", [])
+
+        if isinstance(requires, str):
+            requires = [requires]
+
+        for require in requires:
+            if require not in fields or not fields[require].validate(store=False):
+                return False
+
+        if "condition" in field and self.env.from_string(field["condition"]).render(**values) != "True":
+            return False
+
+        return True
+
+    def field(self, fields, field):
+        """
+        Adds a field if requires and conditions are satsified
+        """
+
+        values = self.values(fields)
+
+        if not self.satisfied(fields, field, values):
+            if field["name"] in fields.values:
+                del fields.values[field["name"]]
+            return
+
+        default = field.get("default")
+
+        if isinstance(default, str):
+            default = self.env.from_string(field["default"]).render(**values)
+
+        fields.append({**field, "default": default})
+
+    def fields(self, forge, values):
         """
         Gets the dynamic fields
         """
@@ -149,13 +229,10 @@ class CnC(flask_restful.Resource):
 
         fields["forge"].description = forge["description"]
 
-        fields.extend(forge.get("input", {}).get("fields", []))
-
-        if "generate" in forge.get("input", {}):
-            module_name, method_name = forge["input"]["generate"].rsplit(".", 1)
-            module = __import__(f"forge.{module_name}")
-            method = getattr(getattr(module, module_name), method_name)
-            fields.extend(method(fields, values, forge) or [])
+        for field in forge.get("input", {}).get("fields", []):
+            if field["name"] in RESERVED:
+                raise Exception(f"field name '{field['name']}' is reserved")
+            self.field(fields, field)
 
         return fields
 
@@ -194,12 +271,16 @@ class CnC(flask_restful.Resource):
         if not fields.validate():
             return fields.to_dict(), 400
 
-        cnc = forge
+        cnc = copy.deepcopy(forge)
 
+        cnc["test"] = flask.request.json.get("test", False)
         cnc["values"] = {field.name: field.value for field in fields}
+        cnc["values"]["code"] = cnc["values"]["craft"].replace('-', '_')
         cnc["status"] = "Created"
 
         cnc["id"] = f"{cnc['values']['craft']}-{cnc['values']['forge']}-{int(time.time())}"
+
+        cnc["values"]["cnc"] = cnc["id"]
 
         flask.current_app.redis.set(f"/cnc/{cnc['id']}", json.dumps(cnc), ex=86400)
 

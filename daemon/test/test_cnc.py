@@ -275,16 +275,208 @@ class TestCnC(unittest.TestCase):
             "ala"
         )
 
+    @unittest.mock.patch("os.listdir")
+    def test_directory(self, mock_listdir):
+
+        mock_listdir.return_value = ["c"]
+
+        self.cnc.craft = unittest.mock.MagicMock()
+
+        # .git
+
+        content = {
+            "source": "a/b/.git",
+            "destination": "a/b/.git",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.directory(content, None)
+
+        self.cnc.craft.assert_not_called()
+
+        # root
+
+        content = {
+            "source": "",
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.craft(content, None)
+
+        self.cnc.craft.assert_called_once_with({
+            "source": "",
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, None)
+
+        # regular
+
+        content = {
+            "source": "a/b",
+            "destination": "a/b",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.directory(content, None)
+
+        self.cnc.craft.assert_called_with({
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, None)
+
+    @unittest.mock.patch("shutil.copy")
+    @unittest.mock.patch("cnc.open", create=True)
+    @unittest.mock.patch("os.chmod")
+    @unittest.mock.patch("os.stat")
+    def test_file(self, mock_stat, mock_mode, mock_open, mock_copy):
+
+        # Copy
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": ["a/b/c"],
+            "transform": []
+        }
+
+        self.cnc.file(content, None)
+
+        mock_copy.assert_called_once_with(
+            "/opt/service/cnc/sweat/source/a/b/c",
+            "/opt/service/cnc/sweat/destination/a/b/c"
+        )
+
+        # Text
+
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data="{{ sure }}\n").return_value,
+            unittest.mock.mock_open(read_data="fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
+            mock_write
+        ]
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": [],
+            "text": "here"
+        }
+
+        self.cnc.file(content, {"sure": "yep"})
+
+        mock_write.write.assert_called_once_with("fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
+
+        # JSON
+
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='"{{ sure }}"').return_value,
+            unittest.mock.mock_open(read_data='{"here": []}').return_value,
+            mock_write
+        ]
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": [],
+            "json": "here"
+        }
+
+        self.cnc.file(content, {"sure": "yep"})
+
+        mock_write.write.assert_called_once_with('{\n    "here": [\n        "yep"\n    ]\n}')
+
+        # YAML
+
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='"{{ sure }}"').return_value,
+            unittest.mock.mock_open(read_data='here: []').return_value,
+            mock_write
+        ]
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": [],
+            "yaml": "here"
+        }
+
+        self.cnc.file(content, {"sure": "yep"})
+
+        mock_write.write.assert_called_once_with('here:\n- yep\n')
+
+        # Transform
+
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{{ sure }}').return_value,
+            mock_write
+        ]
+
+        mock_stat.return_value.st_mode = "ala"
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.file(content, {"sure": "yep"})
+
+        mock_write.write.assert_called_once_with('yep')
+
+        mock_stat.assert_called_once_with(
+            "/opt/service/cnc/sweat/source/a/b/c"
+        )
+
+        mock_mode.assert_called_once_with(
+            "/opt/service/cnc/sweat/destination/a/b/c",
+            "ala"
+        )
+
     @unittest.mock.patch("builtins.print")
     @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("os.makedirs")
     @unittest.mock.patch("os.path.isdir")
     @unittest.mock.patch("os.listdir")
     @unittest.mock.patch("shutil.copy")
-    @unittest.mock.patch("cnc.open", create=True)
-    @unittest.mock.patch("os.chmod")
-    @unittest.mock.patch("os.stat")
-    def test_craft(self, mock_stat, mock_mode, mock_open, mock_copy, mock_listdir, mock_isdir, mock_makedirs, mock_exists, mock_print):
+    def test_craft(self, mock_copy, mock_listdir, mock_isdir, mock_makedirs, mock_exists, mock_print):
 
         # Excluded
 
@@ -338,111 +530,6 @@ class TestCnC(unittest.TestCase):
             "/opt/service/cnc/sweat/destination/a/b/c"
         )
 
-        # Text
-
-        mock_write = unittest.mock.mock_open().return_value
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data="{{ sure }}\n").return_value,
-            unittest.mock.mock_open(read_data="fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
-            mock_write
-        ]
-
-        content = {
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": [],
-            "text": "here"
-        }
-
-        self.cnc.craft(content, {"sure": "yep"})
-
-        mock_write.write.assert_called_once_with("fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
-
-        # JSON
-
-        mock_write = unittest.mock.mock_open().return_value
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='"{{ sure }}"').return_value,
-            unittest.mock.mock_open(read_data='{"here": []}').return_value,
-            mock_write
-        ]
-
-        content = {
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": [],
-            "json": "here"
-        }
-
-        self.cnc.craft(content, {"sure": "yep"})
-
-        mock_write.write.assert_called_once_with('{\n    "here": [\n        "yep"\n    ]\n}')
-
-        # YAML
-
-        mock_write = unittest.mock.mock_open().return_value
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='"{{ sure }}"').return_value,
-            unittest.mock.mock_open(read_data='here: []').return_value,
-            mock_write
-        ]
-
-        content = {
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": [],
-            "yaml": "here"
-        }
-
-        self.cnc.craft(content, {"sure": "yep"})
-
-        mock_write.write.assert_called_once_with('here:\n- yep\n')
-
-        # Transform
-
-        mock_write = unittest.mock.mock_open().return_value
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{{ sure }}').return_value,
-            mock_write
-        ]
-
-        mock_stat.return_value.st_mode = "ala"
-
-        content = {
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": []
-        }
-
-        self.cnc.craft(content, {"sure": "yep"})
-
-        mock_write.write.assert_called_once_with('yep')
-
-        mock_stat.assert_called_once_with(
-            "/opt/service/cnc/sweat/source/a/b/c"
-        )
-
-        mock_mode.assert_called_once_with(
-            "/opt/service/cnc/sweat/destination/a/b/c",
-            "ala"
-        )
-
         # Content
 
         mock_exists.side_effect = Exception("whoops")
@@ -458,6 +545,23 @@ class TestCnC(unittest.TestCase):
 
         mock_glob.return_value = ["/opt/service/cnc/sweat/destination/a/b/c"]
 
+        # Root
+
+        content = {
+            "source": "/"
+        }
+
+        self.cnc.content(content, {})
+
+        self.cnc.craft.assert_called_once_with({
+            "source": "",
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, {})
+
         # Minimal
 
         content = {
@@ -466,7 +570,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.content(content, {"start": "a/b"})
 
-        self.cnc.craft.assert_called_once_with({
+        self.cnc.craft.assert_called_with({
             "source": "a/b/c",
             "destination": "a/b/c",
             "include": [],
@@ -480,7 +584,7 @@ class TestCnC(unittest.TestCase):
         content = {
             "source": "{{ start }}/c",
             "destination": "{{ start }}/d",
-            "include": "e",
+            "include": "e/",
             "exclude": "f",
             "preserve": "g",
             "transform": "h"
@@ -573,6 +677,8 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.code = unittest.mock.MagicMock()
 
+        # Testing
+
         data = {
             "id": "sweat",
             "output": {
@@ -581,7 +687,8 @@ class TestCnC(unittest.TestCase):
                     {"condition": "{{ here == 'here' }}"}
                 ]
             },
-            "values": {"here": "there"}
+            "values": {"here": "there"},
+            "test": True
         }
 
         self.cnc.process(data)
@@ -599,14 +706,39 @@ class TestCnC(unittest.TestCase):
                 {"condition": "{{ here == 'there' }}"},
                 {"condition": "{{ here == 'here' }}"}
             ],
-            "status": "Completed"
+            "status": "Completed",
+            "test": True
         })
 
-        mock_makedirs.assert_called_once_with("/opt/service/cnc/sweat", exist_ok=True)
+        mock_makedirs.assert_called_once_with("/opt/service/cnc/sweat")
 
         self.cnc.code.assert_called_once_with(
             {"condition": "{{ here == 'there' }}"},
             {"here": "there"}
         )
 
-        mock_rmtree.assert_called_once_with("/opt/service/cnc/sweat")
+        mock_rmtree.assert_has_calls([
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),
+            unittest.mock.call("/opt/service/cnc/sweat/source", ignore_errors=True)
+        ])
+
+        # Committing
+
+        data = {
+            "id": "sweat",
+            "output": {
+                "code": [
+                    {"condition": "{{ here == 'there' }}"},
+                    {"condition": "{{ here == 'here' }}"}
+                ]
+            },
+            "values": {"here": "there"},
+            "test": False
+        }
+
+        self.cnc.process(data)
+
+        mock_rmtree.assert_has_calls([
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),
+            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True)
+        ])

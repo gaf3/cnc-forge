@@ -97,8 +97,9 @@ DRApp.controller("Base",null,{
         this.it = this.rest("OPTIONS", "api/cnc/" + DRApp.current.path.id);
         this.application.render(this.it);
     },
-    create_save: function() {
+    create_save: function(test) {
         var request = this.fields_request();
+        request['test'] = test;
         this.it = this.rest("OPTIONS", "api/cnc/" + DRApp.current.path.id, request);
         if (this.it.errors && this.it.errors.length) {
             this.application.render(this.it);

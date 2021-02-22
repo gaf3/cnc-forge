@@ -2,7 +2,8 @@ PyYAML==5.3.1
 redis==3.5.3
 flask==1.1.2
 flask_restful==0.3.8
-git+https://github.com/gaf3/opengui.git@0.8.1#egg=opengui
+git+https://github.com/gaf3/opengui.git@0.8.3#egg=opengui
+Jinja2==2.11.2
 waitress==1.4.4
 freezegun==0.1.11
 ptvsd==4.3.2

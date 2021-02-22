@@ -146,8 +146,8 @@ class CnC:
 
         source = os.path.abspath(f"{self.base()}/source/{content['source']}")
 
-        if not source.startswith(f"{self.base()}/source/"):
-            raise Exception(f"invalid path: {path}")
+        if not source.startswith(f"{self.base()}/source"):
+            raise Exception(f"invalid path: {source}")
 
         if path:
             return source
@@ -162,8 +162,8 @@ class CnC:
 
         destination = os.path.abspath(f"{self.base()}/destination/{content['destination']}")
 
-        if not destination.startswith(f"{self.base()}/destination/"):
-            raise Exception(f"invalid path: {path}")
+        if not destination.startswith(f"{self.base()}/destination"):
+            raise Exception(f"invalid path: {destination}")
 
         if path:
             return destination
@@ -267,6 +267,52 @@ class CnC:
             os.stat(self.source(content, path=True)).st_mode
         )
 
+    def directory(self, content, values):
+        """
+        Craft a directory
+        """
+
+        # Iterate though the items found as long as we're not .git
+
+        if content["source"].split("/")[-1] != ".git":
+            for item in os.listdir(self.source(content, path=True)):
+                self.craft({**content,
+                    "source": f"{content['source']}/{item}" if content['source'] else item,
+                    "destination": f"{content['destination']}/{item}" if content['destination'] else item
+                }, values)
+
+    def file(self, content, values):
+        """
+        Craft a file
+        """
+
+        # If we're preserving, just copy, else load source and transformation to destination
+
+        if self.preserve(content):
+            self.copy(content)
+            return
+
+        source = self.transform(self.source(content), values)
+
+        # See if we're injecting anywhere, else just overwrite
+
+        mode = False
+
+        if "text" in content:
+            destination = self.text(source, self.destination(content), content["text"])
+        elif "json" in content:
+            destination = self.json(source, self.destination(content), content["json"])
+        elif "yaml" in content:
+            destination = self.yaml(source, self.destination(content), content["yaml"])
+        else:
+            mode = True
+            destination = source
+
+        self.destination(content, destination)
+
+        if mode:
+            self.mode(content)
+
     def craft(self, content, values):
         """
         Craft changes, the actual work of creating desitnations from sources
@@ -292,48 +338,16 @@ class CnC:
 
         if os.path.isdir(self.source(content, path=True)):
 
-            # Iterate though the items found
-
-            for item in os.listdir(self.source(content, path=True)):
-                self.craft({**content,
-                    "source": f"{content['source']}/{item}",
-                    "destination": f"{content['destination']}/{item}"
-                }, values)
+            self.directory(content, values)
 
         else:
 
-            # If we're preserving, just copy, else load source and transformation to destination
-
-            if self.preserve(content):
-
-                self.copy(content)
-
-            else:
-
-                source = self.transform(self.source(content), values)
-
-                # See if we're injecting anywhere, else just overwrite
-
-                mode = False
-
-                if "text" in content:
-                    destination = self.text(source, self.destination(content), content["text"])
-                elif "json" in content:
-                    destination = self.json(source, self.destination(content), content["json"])
-                elif "yaml" in content:
-                    destination = self.yaml(source, self.destination(content), content["yaml"])
-                else:
-                    mode = True
-                    destination = source
-
-                self.destination(content, destination)
-
-                if mode:
-                    self.mode(content)
+            self.file(content, values)
 
         # It worked, so delete the content
 
-        del self.data['content']
+        if "content" in self.data:
+            del self.data['content']
 
     def content(self, content, values):
         """
@@ -346,14 +360,21 @@ class CnC:
             content[collection] = self.transform(content.get(collection, []), values)
             if isinstance(content[collection], str):
                 content[collection] = [content[collection]]
+            content[collection] = [pattern[:-1] if pattern[-1] == "/" else pattern for pattern in content[collection]]
+
 
         # Transform the source on templating
 
         content["source"] = self.transform(content["source"], values)
 
+        if content["source"] == "/":
+            sources = [""]
+        else:
+            sources = [self.relative(source) for source in glob.glob(self.source(content, path=True))]
+
         # Go through the source as glob, transforming destination accordingly, assuming source if missing
 
-        for source in [self.relative(source) for source in glob.glob(self.source(content, path=True))]:
+        for source in sources:
             self.craft({**content,
                 "source": source,
                 "destination": self.transform(content.get("destination", source), values)
@@ -410,17 +431,21 @@ class CnC:
 
         self.data["code"] = self.data["output"]["code"]
 
-        # Create the directory for this process, in case it dies and
-        # we need to look at what's going on
+        # Wipe and create the directory for this process
 
-        os.makedirs(self.base(), exist_ok=True)
+        shutil.rmtree(self.base(), ignore_errors=True)
+        os.makedirs(self.base())
 
         # Go through each code, which it'll check conditions, transpose, and iterate
 
         for code, code_values in self.each(self.data["code"], self.data["values"]):
             self.code(code, code_values)
 
-        # If we're here we were successful and can clean up
+        # If we're here we were successful and can clean up if we're not testing
 
         self.data["status"] = "Completed"
-        shutil.rmtree(self.base())
+
+        if self.data["test"]:
+            shutil.rmtree(f"{self.base()}/source", ignore_errors=True)
+        else:
+            shutil.rmtree(self.base(), ignore_errors=True)
