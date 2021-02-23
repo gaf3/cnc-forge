@@ -53,7 +53,7 @@ pipeline {
         }
         stage('push api') {
             when {
-                branch 'master'
+                branch 'main'
             }
             steps {
                 dir('api') {
@@ -63,7 +63,7 @@ pipeline {
         }
         stage('push daemon') {
             when {
-                branch 'master'
+                branch 'main'
             }
             steps {
                 dir('daemon') {
@@ -73,7 +73,7 @@ pipeline {
         }
         stage('push gui') {
             when {
-                branch 'master'
+                branch 'main'
             }
             steps {
                 dir('gui') {
