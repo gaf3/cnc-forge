@@ -4,6 +4,7 @@ Module for the service
 
 # pylint: disable=no-self-use
 
+import os
 import time
 import copy
 import glob
@@ -84,8 +85,9 @@ class Forge(flask_restful.Resource):
         forges = {}
 
         for forge_path in sorted(glob.glob("/opt/service/forge/*.yaml")):
-            with open(forge_path, "r") as forge_file:
-                forges[forge_path.split("/")[-1].split(".")[0]] = yaml.safe_load(forge_file)["description"]
+            if forge_path.split("/")[-1] not in ["fields.yaml", "values.yaml"]:
+                with open(forge_path, "r") as forge_file:
+                    forges[forge_path.split("/")[-1].split(".")[0]] = yaml.safe_load(forge_file)["description"]
 
         return forges
 
@@ -229,6 +231,10 @@ class CnC(flask_restful.Resource):
 
         fields["forge"].description = forge["description"]
 
+        if os.path.exists("/opt/service/forge/fields.yaml"):
+            with open("/opt/service/forge/fields.yaml", "r") as fields_file:
+                fields.extend(yaml.safe_load(fields_file).get("fields", []))
+
         for field in forge.get("input", {}).get("fields", []):
             if field["name"] in RESERVED:
                 raise Exception(f"field name '{field['name']}' is reserved")
@@ -273,8 +279,14 @@ class CnC(flask_restful.Resource):
 
         cnc = copy.deepcopy(forge)
 
+        cnc["values"] = {}
+
+        if os.path.exists("/opt/service/forge/values.yaml"):
+            with open("/opt/service/forge/values.yaml", "r") as values_file:
+                cnc["values"].update(yaml.safe_load(values_file).get("values", {}))
+
         cnc["test"] = flask.request.json.get("test", False)
-        cnc["values"] = {field.name: field.value for field in fields}
+        cnc["values"].update({field.name: field.value for field in fields})
         cnc["values"]["code"] = cnc["values"]["craft"].replace('-', '_')
         cnc["status"] = "Created"
 
