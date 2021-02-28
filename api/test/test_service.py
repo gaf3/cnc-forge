@@ -161,7 +161,9 @@ class TestForge(TestRestful):
 
         mock_glob.return_value = [
             "/opt/service/forge/there.yaml",
-            "/opt/service/forge/here.yaml"
+            "/opt/service/forge/here.yaml",
+            "/opt/service/forge/fields.yaml",
+            "/opt/service/forge/values.yaml"
         ]
 
         mock_open.side_effect = [
@@ -401,7 +403,17 @@ class TestCnC(TestRestful):
         self.assertEqual(len(fields), 2)
         self.assertEqual(fields["happy"].default, "7085 bone")
 
-    def test_fields(self):
+    @unittest.mock.patch('service.os.path.exists')
+    @unittest.mock.patch('service.open', create=True)
+    def test_fields(self, mock_open, mock_exists):
+
+        mock_exists.return_value = True
+
+        mock_open.side_effect = [
+           unittest.mock.mock_open(read_data='fields:\n- name: extra').return_value,
+           unittest.mock.mock_open(read_data='{}').return_value,
+           unittest.mock.mock_open(read_data='{}').return_value
+         ]
 
         cnc = service.CnC()
 
@@ -425,8 +437,13 @@ class TestCnC(TestRestful):
                 "validation": '^[a-z][a-z0-9\-]{3,47}$',
                 "required": True,
                 "trigger": True
+            },
+            {
+                "name": "extra"
             }
         ],ready=True)
+
+        mock_exists.assert_called_once_with("/opt/service/forge/fields.yaml")
 
         forge = {
             "id": "here",
@@ -530,7 +547,15 @@ class TestCnC(TestRestful):
     @freezegun.freeze_time("2020-11-02") # 1604275200
     @unittest.mock.patch("service.Forge.forge")
     @unittest.mock.patch("service.Forge.forges")
-    def test_post(self, mock_forges, mock_forge):
+    @unittest.mock.patch('service.os.path.exists')
+    @unittest.mock.patch('service.open', create=True)
+    def test_post(self, mock_open, mock_exists, mock_forges, mock_forge):
+
+        def exists(path):
+
+            return path == "/opt/service/forge/values.yaml"
+
+        mock_exists.side_effect = exists
 
         mock_forges.return_value = {}
 
@@ -579,6 +604,11 @@ class TestCnC(TestRestful):
             }
         ], ready=True, valid=False)
 
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='values:\n  good: times').return_value,
+            unittest.mock.mock_open(read_data='{}').return_value
+        ]
+
         response = self.api.post("/cnc/here", json={
             "values": {
                 "craft": "fun-time",
@@ -601,6 +631,7 @@ class TestCnC(TestRestful):
                 "craft": "fun-time",
                 "code": "fun_time",
                 "some": "thing",
+                "good": "times",
                 "cnc": "fun-time-here-1604275200"
             },
             "status": "Created",
@@ -622,6 +653,7 @@ class TestCnC(TestRestful):
                 "craft": "fun-time",
                 "code": "fun_time",
                 "some": "thing",
+                "good": "times",
                 "cnc": "fun-time-here-1604275200"
             },
             "status": "Created",
@@ -629,6 +661,8 @@ class TestCnC(TestRestful):
         })
 
         self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
+
+        mock_exists.return_value = False
 
         response = self.api.post("/cnc/here", json={
             "values": {
