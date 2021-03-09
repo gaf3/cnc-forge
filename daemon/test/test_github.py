@@ -288,6 +288,7 @@ class TestGitHub(unittest.TestCase):
 
         github = {
             "repo": "my/stuff",
+            "prefix": "YOLO-420",
             "hook": "here"
         }
 
@@ -303,14 +304,15 @@ class TestGitHub(unittest.TestCase):
             "hook": [{
                 "url": "here"
             }],
-            "branch": "sweat",
+            "prefix": "YOLO-420",
+            "branch": "YOLO-420-sweat",
             "upstream": True
         })
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
             unittest.mock.call("git branch", shell=True),
-            unittest.mock.call("git checkout -b sweat", shell=True)
+            unittest.mock.call("git checkout -b YOLO-420-sweat", shell=True)
         ])
 
     @unittest.mock.patch("os.chdir")
@@ -491,6 +493,7 @@ class TestGitHub(unittest.TestCase):
                 "name": "stuff",
                 "base_branch": "maine"
             },
+            "prefix": "YOLO-420",
             "branch": "maine"
         }
 
@@ -503,13 +506,14 @@ class TestGitHub(unittest.TestCase):
                 "name": "stuff",
                 "base_branch": "maine"
             },
+            "prefix": "YOLO-420",
             "branch": "maine"
         })
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),
             unittest.mock.call("git status", shell=True),
-            unittest.mock.call("git commit -am 'sweat'", shell=True),
+            unittest.mock.call("git commit -am 'YOLO-420: sweat'", shell=True),
             unittest.mock.call("git push origin", shell=True)
         ])
 
