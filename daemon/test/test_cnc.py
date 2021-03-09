@@ -671,6 +671,12 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.daemon.github.commit.assert_called_once_with(self.cnc, {"repo": "there"})
 
+    def test_link(self):
+
+        self.cnc.link("sure")
+        self.cnc.link("sure")
+        self.assertEqual(self.cnc.data["links"], ["sure"])
+
     @unittest.mock.patch("os.makedirs")
     @unittest.mock.patch("shutil.rmtree")
     def test_process(self, mock_rmtree, mock_makedirs):

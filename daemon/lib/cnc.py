@@ -417,6 +417,16 @@ class CnC:
         if "github" in code:
             self.daemon.github.commit(self, code["github"])
 
+    def link(self, link):
+        """
+        Adds a link to display
+        """
+
+        self.data.setdefault("links", [])
+
+        if link not in self.data["links"]:
+            self.data["links"].append(link)
+
     def process(self, data):
         """
         Process a CnC

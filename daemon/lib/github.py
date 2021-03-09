@@ -67,6 +67,7 @@ class GitHub:
         for exists in self.iterate("user/repos"):
             if exists["full_name"] == repo["full_name"]:
                 repo.setdefault("base_branch", exists["default_branch"])
+                repo["url"] = exists["html_url"]
                 return repo
 
         if not ensure:
@@ -80,7 +81,10 @@ class GitHub:
         else:
             path = "user/repos"
 
-        repo.setdefault("base_branch", self.request("POST", path, json=dict(repo))["default_branch"])
+        created = self.request("POST", path, json=dict(repo))
+
+        repo.setdefault("base_branch", created["default_branch"])
+        repo["url"] = created["html_url"]
 
         return repo
 
@@ -117,6 +121,7 @@ class GitHub:
 
         for exists in self.iterate(f"repos/{repo['full_name']}/pulls"):
             if exists["head"]["ref"] == branch:
+                pull_request["url"] = exists["html_url"]
                 return pull_request
 
         create = {
@@ -127,7 +132,7 @@ class GitHub:
 
         print(create)
 
-        self.request("POST", f"repos/{repo['full_name']}/pulls", json=create)
+        pull_request["url"] = self.request("POST", f"repos/{repo['full_name']}/pulls", json=create)["html_url"]
 
         return pull_request
 
@@ -232,3 +237,6 @@ class GitHub:
 
         if github.get("branch") != github["repo"]["base_branch"]:
             github["pull_request"] = self.pull_request(github["repo"], github["branch"], github.get("pull_request", github["branch"]))
+            cnc.link(github["pull_request"]["url"])
+        else:
+            cnc.link(github["repo"]["url"])
