@@ -157,7 +157,9 @@ class GitHub:
 
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git destination", shell=True))
 
-        github.setdefault("branch", cnc.data["id"])
+        branch = f"{github['prefix']}-{cnc.data['id']}" if "prefix" in github else cnc.data["id"]
+
+        github.setdefault("branch", branch)
 
         os.chdir(destination)
 
@@ -219,7 +221,9 @@ class GitHub:
 
         if b"Changes to be committed" in subprocess.check_output("git status", shell=True):
 
-            print(subprocess.check_output(f"git commit -am '{cnc.data['id']}'", shell=True))
+            message = f"{github['prefix']}: {cnc.data['id']}" if "prefix" in github else cnc.data["id"]
+
+            print(subprocess.check_output(f"git commit -am '{message}'", shell=True))
 
             if github.get("upstream"):
                 print(subprocess.check_output(f"git push --set-upstream origin {github['branch']}", shell=True))
