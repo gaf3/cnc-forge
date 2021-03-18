@@ -23,7 +23,7 @@
         </div>
 {{?it.cnc.content}}
         <div class="uk-form-row">
-            <label class="uk-form-label" for="traceback"><strong>content</strong></label>
+            <label class="uk-form-label" for="content"><strong>content</strong></label>
             <div class="uk-form-controls">
                 <pre><code></code>
                     {{=JSON.stringify(it.cnc.content, null, 2)}}
@@ -38,6 +38,16 @@
                 <pre><code></code>
                     {{=it.cnc.traceback}}
                 </code></pre>
+            </div>
+        </div>
+{{?}}
+{{?it.cnc.links}}
+        <div class="uk-form-row">
+            <label class="uk-form-label" for="links"><strong>links</strong></label>
+            <div class="uk-form-controls">
+    {{~it.cnc.links :link}}
+                <a href="{{! link }}" target="_blank">{{= link }}</a><br/>
+    {{~}}
             </div>
         </div>
 {{?}}

@@ -107,6 +107,17 @@ DRApp.controller("Base",null,{
             this.application.go("cnc_retrieve", this.rest("POST", "api/cnc/" + DRApp.current.path.id, request)["cnc"]["id"]);
         }
     },
+    cnc_timer: null,
+    cnc_clear: function() {
+        if (this.cnc_timer) {
+            window.clearTimeout(this.cnc_timer);
+        }
+    },
+    cnc_refresh: function() {
+        this.cnc_clear();
+        this.application.refresh();
+        this.cnc_timer = window.setTimeout($.proxy(this, "cnc_refresh"), 5000);
+    },
     cnc_list: function() {
         this.it = this.rest("GET", "api/cnc");
         this.application.render(this.it);
@@ -114,6 +125,7 @@ DRApp.controller("Base",null,{
     cnc_retrieve: function() {
         this.it = this.rest("GET", "api/cnc/" + DRApp.current.path.id);
         this.application.render(this.it);
+        this.cnc_timer = window.setTimeout($.proxy(this, "cnc_refresh"), 5000);
     },
     cnc_retry: function() {
         this.it = this.rest("PATCH", "api/cnc/" + DRApp.current.path.id);
@@ -144,4 +156,4 @@ DRApp.route("forge_list", "/forge", "Forges", "Base", "forge_list");
 DRApp.route("forge_retrieve", "/forge/{id:^.+$}", "Forge", "Base", "forge_retrieve");
 DRApp.route("create", "/cnc/{id:^.+$}/create", "Create", "Base", "create");
 DRApp.route("cnc_list", "/cnc", "CnCs", "Base", "cnc_list");
-DRApp.route("cnc_retrieve", "/cnc/{id:^.+$}", "CnC", "Base", "cnc_retrieve");
+DRApp.route("cnc_retrieve", "/cnc/{id:^.+$}", "CnC", "Base", "cnc_retrieve", "cnc_clear");

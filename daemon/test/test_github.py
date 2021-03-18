@@ -62,14 +62,16 @@ class TestGitHub(unittest.TestCase):
 
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
             "full_name": "does/exist",
-            "default_branch": "maine"
+            "default_branch": "maine",
+            "html_url": "yep"
         }])
 
         self.assertEqual(self.github.repo("does/exist"), {
             "full_name": "does/exist",
             "org": "does",
             "name": "exist",
-            "base_branch": "maine"
+            "base_branch": "maine",
+            "url": "yep"
         })
 
         self.github.iterate.assert_called_once_with("user/repos")
@@ -83,7 +85,7 @@ class TestGitHub(unittest.TestCase):
 
         # org dooesn't exist, create
 
-        self.github.api.request.return_value.json.return_value = {"default_branch": "notracist"}
+        self.github.api.request.return_value.json.return_value = {"default_branch": "notracist", "html_url": "sure"}
 
         self.assertEqual(self.github.repo("doesnt/exist"), {
             "full_name": "doesnt/exist",
@@ -91,7 +93,8 @@ class TestGitHub(unittest.TestCase):
             "name": "exist",
             "private": True,
             "visibility": "internal",
-            "base_branch": "notracist"
+            "base_branch": "notracist",
+            "url": "sure"
         })
 
         self.github.api.request.assert_called_once_with("POST", "https://api.github.com/orgs/doesnt/repos", params=None, json={
@@ -108,7 +111,8 @@ class TestGitHub(unittest.TestCase):
             "full_name": "me/doesnt",
             "name": "doesnt",
             "private": True,
-            "base_branch": "notracist"
+            "base_branch": "notracist",
+            "url": "sure"
         })
 
         self.github.api.request.assert_called_with("POST", "https://api.github.com/user/repos", params=None, json={
@@ -156,13 +160,15 @@ class TestGitHub(unittest.TestCase):
         }
 
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
-            "head": {"ref": "exists"}
+            "head": {"ref": "exists"},
+            "html_url": "ya"
         }])
 
         # exists
 
         self.assertEqual(self.github.pull_request(repo, "exists", "exists"), {
-            "title": "exists"
+            "title": "exists",
+            "url": "ya"
         })
 
         self.github.iterate.assert_called_once_with("repos/my/stuff/pulls")
@@ -171,9 +177,12 @@ class TestGitHub(unittest.TestCase):
 
         # doesn't exist
 
+        self.github.api.request.return_value.json.return_value = {"html_url": "sure"}
+
         self.assertEqual(self.github.pull_request(repo, "doesnt", {"body": "rock"}), {
             "title": "doesnt",
-            "body": "rock"
+            "body": "rock",
+            "url": "sure"
         })
 
         mock_print.assert_called_once_with({
@@ -206,7 +215,8 @@ class TestGitHub(unittest.TestCase):
             if url == "user/repos":
                 return [{
                     "full_name": "my/stuff",
-                    "default_branch": "maine"
+                    "default_branch": "maine",
+                    "html_url": "ya"
                 }]
             elif url == "repos/my/stuff/hooks":
                 return [{
@@ -266,7 +276,8 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "ya"
             },
             "hook": [{
                 "url": "here"
@@ -299,7 +310,8 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "ya"
             },
             "hook": [{
                 "url": "here"
@@ -326,7 +338,8 @@ class TestGitHub(unittest.TestCase):
             if url == "user/repos":
                 return [{
                     "full_name": "my/stuff",
-                    "default_branch": "maine"
+                    "default_branch": "maine",
+                    "html_url": "ya"
                 }]
 
         self.github.iterate = iterate
@@ -358,7 +371,8 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "ya"
             },
             "branch": "ayup"
         })
@@ -404,7 +418,8 @@ class TestGitHub(unittest.TestCase):
 
             if url == "repos/my/stuff/pulls":
                 return [{
-                    "head": {"ref": "ayup"}
+                    "head": {"ref": "ayup"},
+                    "html_url": "sure"
                 }]
 
         self.github.iterate = iterate
@@ -468,9 +483,12 @@ class TestGitHub(unittest.TestCase):
             "branch": "ayup",
             "upstream": True,
             "pull_request": {
-                "title": "ayup"
+                "title": "ayup",
+                "url": "sure"
             }
         })
+
+        cnc.link.assert_called_once_with("sure")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),
@@ -491,7 +509,8 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "ya"
             },
             "prefix": "YOLO-420",
             "branch": "maine"
@@ -504,11 +523,14 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "ya"
             },
             "prefix": "YOLO-420",
             "branch": "maine"
         })
+
+        cnc.link.assert_called_with("ya")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),
@@ -528,12 +550,15 @@ class TestGitHub(unittest.TestCase):
                 "full_name": "my/stuff",
                 "org": "my",
                 "name": "stuff",
-                "base_branch": "maine"
+                "base_branch": "maine",
+                "url": "fine"
             },
             "branch": "maine"
         }
 
         self.github.commit(cnc, github)
+
+        cnc.link.assert_called_with("fine")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),
