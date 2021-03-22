@@ -28,7 +28,7 @@ FIELDS = [
     {
         "name": "craft",
         "description": "name of what to craft, used for repos, branches, change requests",
-        "validation": r'^[a-z][a-z0-9\-]{3,47}$',
+        "validation": r'^[a-z][a-z0-9\-]{1,46}$',
         "required": True,
         "trigger": True
     }

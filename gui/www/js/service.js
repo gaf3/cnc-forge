@@ -115,8 +115,7 @@ DRApp.controller("Base",null,{
     },
     cnc_refresh: function() {
         this.cnc_clear();
-        this.application.refresh();
-        this.cnc_timer = window.setTimeout($.proxy(this, "cnc_refresh"), 5000);
+        this.cnc_retrieve();
     },
     cnc_list: function() {
         this.it = this.rest("GET", "api/cnc");
