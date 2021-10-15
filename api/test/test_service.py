@@ -382,7 +382,6 @@ class TestCnC(TestRestful):
         cnc.field(fields, field)
 
         self.assertEqual(len(fields), 0)
-        self.assertEqual(fields.values, {})
 
         # default
 
@@ -434,7 +433,7 @@ class TestCnC(TestRestful):
             {
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "validation": '^[a-z][a-z0-9\-]{1,46}$',
                 "required": True,
                 "trigger": True
             },
@@ -469,7 +468,7 @@ class TestCnC(TestRestful):
             {
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "validation": '^[a-z][a-z0-9\-]{1,46}$',
                 "required": True,
                 "trigger": True,
                 "value": "fun"
@@ -533,7 +532,7 @@ class TestCnC(TestRestful):
             {
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "validation": '^[a-z][a-z0-9\-]{1,46}$',
                 "required": True,
                 "trigger": True,
                 "value": "funtime"
@@ -554,6 +553,11 @@ class TestCnC(TestRestful):
         def exists(path):
 
             return path == "/opt/service/forge/values.yaml"
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='values:\n  good: times').return_value,
+            unittest.mock.mock_open(read_data='{}').return_value
+        ]
 
         mock_exists.side_effect = exists
 
@@ -577,7 +581,7 @@ class TestCnC(TestRestful):
 
         response = self.api.post("/cnc/here", json={
             "values": {
-                "craft": "fun",
+                "craft": "0fun",
                 "some": "thing"
             }
         })
@@ -592,22 +596,17 @@ class TestCnC(TestRestful):
             {
                 "name": "craft",
                 "description": "name of what to craft, used for repos, branches, change requests",
-                "validation": '^[a-z][a-z0-9\-]{3,47}$',
+                "validation": '^[a-z][a-z0-9\-]{1,46}$',
                 "required": True,
                 "trigger": True,
-                "value": "fun",
-                "errors": ["must match '^[a-z][a-z0-9\\-]{3,47}$'"]
+                "value": "0fun",
+                "errors": ["must match '^[a-z][a-z0-9\\-]{1,46}$'"]
             },
             {
                 "name":"some",
                 "value":"thing"
             }
         ], ready=True, valid=False)
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='values:\n  good: times').return_value,
-            unittest.mock.mock_open(read_data='{}').return_value
-        ]
 
         response = self.api.post("/cnc/here", json={
             "values": {
