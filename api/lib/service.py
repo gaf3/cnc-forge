@@ -205,8 +205,6 @@ class CnC(flask_restful.Resource):
         values = self.values(fields)
 
         if not self.satisfied(fields, field, values):
-            if field["name"] in fields.values:
-                del fields.values[field["name"]]
             return
 
         default = field.get("default")

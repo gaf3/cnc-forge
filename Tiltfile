@@ -6,12 +6,12 @@ k8s_yaml(kustomize('kubernetes/tilt'))
 
 local_resource(
     name='secret',
-    cmd='kubectl -n cnc-forge create secret generic secret --from-file secret/ --dry-run=client -o yaml | kubectl apply -f -'
+    cmd='kubectx docker-desktop && kubectl -n cnc-forge create secret generic secret --from-file secret/ --dry-run=client -o yaml | kubectl apply -f -'
 )
 
 local_resource(
     name='forge', deps=["forge/"],
-    cmd='kubectl -n cnc-forge create configmap forge --from-file forge/ --dry-run=client -o yaml | kubectl apply -f -'
+    cmd='kubectx docker-desktop && kubectl -n cnc-forge create configmap forge --from-file forge/ --dry-run=client -o yaml | kubectl apply -f -'
 )
 
 k8s_resource('redis', port_forwards=['26770:5678'])
