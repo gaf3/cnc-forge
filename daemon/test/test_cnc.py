@@ -389,6 +389,28 @@ class TestCnC(unittest.TestCase):
 
         mock_write.write.assert_called_once_with("fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
 
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data="{{ sure }}\n").return_value,
+            unittest.mock.mock_open(read_data="fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
+            mock_write
+        ]
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": [],
+            "text": True
+        }
+
+        self.cnc.file(content, {"sure": "yep", "there": "here"})
+
+        mock_write.write.assert_called_once_with("fie\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep")
+
         # JSON
 
         mock_write = unittest.mock.mock_open().return_value
