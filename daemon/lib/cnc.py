@@ -299,11 +299,11 @@ class CnC:
         mode = False
 
         if "text" in content:
-            destination = self.text(source, self.destination(content), content["text"])
+            destination = self.text(source, self.destination(content), self.transform(content["text"], values))
         elif "json" in content:
-            destination = self.json(source, self.destination(content), content["json"])
+            destination = self.json(source, self.destination(content), self.transform(content["json"], values))
         elif "yaml" in content:
-            destination = self.yaml(source, self.destination(content), content["yaml"])
+            destination = self.yaml(source, self.destination(content), self.transform(content["yaml"], values))
         else:
             mode = True
             destination = source
