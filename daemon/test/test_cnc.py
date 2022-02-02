@@ -382,10 +382,10 @@ class TestCnC(unittest.TestCase):
             "exclude": [],
             "preserve": [],
             "transform": [],
-            "text": "here"
+            "text": "{{ there }}"
         }
 
-        self.cnc.file(content, {"sure": "yep"})
+        self.cnc.file(content, {"sure": "yep", "there": "here"})
 
         mock_write.write.assert_called_once_with("fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
 
@@ -406,10 +406,10 @@ class TestCnC(unittest.TestCase):
             "exclude": [],
             "preserve": [],
             "transform": [],
-            "json": "here"
+            "json": "{{ there }}"
         }
 
-        self.cnc.file(content, {"sure": "yep"})
+        self.cnc.file(content, {"sure": "yep", "there": "here"})
 
         mock_write.write.assert_called_once_with('{\n    "here": [\n        "yep"\n    ]\n}')
 
@@ -430,10 +430,10 @@ class TestCnC(unittest.TestCase):
             "exclude": [],
             "preserve": [],
             "transform": [],
-            "yaml": "here"
+            "yaml": "{{ there }}"
         }
 
-        self.cnc.file(content, {"sure": "yep"})
+        self.cnc.file(content, {"sure": "yep", "there": "here"})
 
         mock_write.write.assert_called_once_with('here:\n- yep\n')
 
