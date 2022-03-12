@@ -17,11 +17,11 @@
                 rows='7' cols='42'
                 id="{{!full_name}}"
                 placeholder="{{!field.label || field.name}}"
-                {{?field.trigger}}OnInput="DRApp.current.controller.fields_change();"{{?}}
+                {{?field.trigger}}OnInput="DRApp.current.controller.delay_change();"{{?}}
             >{{=value}}</textarea>
         {{?}}
     {{??field.style == "select" && !readonly}}
-            <select id="{{!full_name}}" {{?field.trigger}}OnChange="DRApp.current.controller.fields_change();"{{?}}>
+            <select id="{{!full_name}}" {{?field.trigger}}OnChange="DRApp.current.controller.delay_change();"{{?}}>
         {{?field.optional}}
                 <option value=''></option>
         {{?}}
@@ -51,7 +51,7 @@
                 type="radio" name="{{!full_name}}"
                 {{?value == option}}checked{{?}}
             {{?}}
-                {{?field.trigger}}OnClick="DRApp.current.controller.fields_change();"{{?}}
+                {{?field.trigger}}OnClick="DRApp.current.controller.delay_change();"{{?}}
             />
             {{= field.labels ? field.labels[option] : option}}<br/>
             {{~}}
