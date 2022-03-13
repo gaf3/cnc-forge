@@ -401,6 +401,50 @@ class TestGitHub(unittest.TestCase):
 
         mock_chdir.assert_not_called()
 
+        # create
+
+        mock_chdir.reset_mock()
+        mock_rmtree.reset_mock()
+        mock_subprocess.reset_mock()
+        mock_print.reset_mock()
+
+        cnc = unittest.mock.MagicMock()
+        cnc.data = {}
+        cnc.base.return_value = "noise"
+
+        github = {
+            "repo": "my/stuff",
+            "create": True
+        }
+
+        self.github.change(cnc, github)
+
+        self.assertEqual(github, {
+            "repo": {
+                "full_name": "my/stuff",
+                "org": "my",
+                "name": "stuff",
+                "base_branch": "maine",
+                "url": "ya"
+            },
+            "create": True,
+            "branch": "maine"
+        })
+
+        self.assertEqual(cnc.data["change"], github)
+
+        mock_chdir.assert_has_calls([
+            unittest.mock.call("noise")
+        ])
+        mock_rmtree.assert_called_once_with("noise/source", ignore_errors=True)
+        mock_subprocess.assert_has_calls([
+            unittest.mock.call("git clone git@github.com:my/stuff.git source", shell=True)
+        ])
+        mock_print.assert_has_calls([
+            unittest.mock.call("cloned")
+        ])
+
+
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("os.rename")
