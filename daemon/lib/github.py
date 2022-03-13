@@ -196,6 +196,9 @@ class GitHub:
 
         print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git source", shell=True))
 
+        if github.get("create"):
+            github.setdefault("branch", github["repo"]["base_branch"])
+
         if github.get("branch") and github["branch"] != github["repo"]["base_branch"]:
             os.chdir(source)
             print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
