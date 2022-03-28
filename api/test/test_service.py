@@ -366,7 +366,161 @@ class TestCnC(TestRestful):
 
         self.assertTrue(cnc.satisfied(fields, field, values))
 
-    def test_field(self):
+    @unittest.mock.patch('service.open', create=True)
+    def test_secret(self, mock_open):
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{"people": "stuff"}').return_value
+        ]
+
+        cnc = service.CnC()
+
+        self.assertEqual(cnc.secret({"name": "{{ things }}", "path": "people"}, {"things": "data.yaml"}), "stuff")
+
+        mock_open.assert_called_once_with("/opt/service/secret/data.yaml", "r")
+
+    @unittest.mock.patch('service.open', create=True)
+    def test_render(self, mock_open):
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{"people": "stuff"}').return_value
+        ]
+
+        cnc = service.CnC()
+
+        self.assertEqual(cnc.render(
+            {
+                "{{ people }}": [
+                    "{{ stuff }}",
+                    {
+                        "secret": {"name": "{{ things }}", "path": "people"}
+                    }
+                ]
+            },
+            {
+                "people": "stuff",
+                "stuff": "things",
+                "things": "data.yaml"
+            }
+        ), {
+            "stuff": [
+                "things",
+                "stuff"
+            ]
+        })
+
+    @unittest.mock.patch('requests.Session')
+    @unittest.mock.patch('service.open', create=True)
+    def test_api(self, mock_open, mock_session):
+
+        mock_session.return_value.headers = {}
+
+        def secrets(path, mode):
+
+            if path.endswith("things.yaml"):
+                read_data = '{"people": "stuff"}'
+            elif path.endswith("auth.yaml"):
+                read_data = '{"username": "me", "password": "ssh"}'
+            elif path.endswith("token.yaml"):
+                read_data = '{"token": "toll"}'
+            elif path.endswith("headers.yaml"):
+                read_data = '{"first": "yep", "second": "sure"}'
+
+            return unittest.mock.mock_open(read_data=read_data).return_value
+
+        mock_open.side_effect = secrets
+
+        values = {
+            "a": 1,
+            "b": 2
+        }
+
+        api = {
+            "uri": {
+                "secret": {
+                    "name": "things.yaml",
+                    "path": "people"
+                }
+            },
+            "params": {"yin": "{{ a }}"},
+            "body": {"yang": "{{ b }}"},
+            "auth": {"secret": "auth.yaml"},
+            "token": {
+                "secret": {
+                    "name": "token.yaml",
+                    "path": "token"
+                }
+            },
+            "headers": {
+                "secret": "headers.yaml"
+            }
+        }
+
+        mock_session.return_value.get.return_value.json.return_value = [1, 2, 3]
+
+        cnc = service.CnC()
+
+        extra = {}
+
+        cnc.api(api, values, extra)
+
+        self.assertEqual(extra, {
+            "options": [1, 2, 3]
+        })
+
+        mock_session.return_value.auth.assert_called_once_with("me", "ssh")
+
+        self.assertEqual(mock_session.return_value.headers, {
+            "Authorization": "Bearer toll",
+            "first": "yep",
+            "second": "sure"
+        })
+
+        mock_session.return_value.get.assert_called_once_with(
+            "stuff",
+            params={"yin": '1'},
+            json={"yang": '2'}
+        )
+
+        mock_session.return_value.get.return_value.json.return_value = {
+            "numbers": [
+                {
+                    "id": 1,
+                    "name": "one"
+                },
+                {
+                    "id": 2,
+                    "name": "two"
+                },
+                {
+                    "id": 3,
+                    "name": "three"
+                }
+            ]
+        }
+
+        api = {
+            "uri": "yep",
+            "options": "numbers",
+            "option": "id",
+            "title": "name"
+        }
+
+        extra = {}
+
+        cnc.api(api, values, extra)
+
+        self.assertEqual(extra, {
+            "options": [1, 2, 3],
+            "titles": {
+                1: "one",
+                2: "two",
+                3: "three"
+            }
+        })
+
+    @unittest.mock.patch('requests.Session')
+    def test_field(self, mock_session):
 
         cnc = service.CnC()
 
@@ -401,6 +555,43 @@ class TestCnC(TestRestful):
 
         self.assertEqual(len(fields), 2)
         self.assertEqual(fields["happy"].default, "7085 bone")
+
+        mock_session.return_value.get.return_value.json.return_value = {
+            "numbers": [
+                {
+                    "id": 1,
+                    "name": "one"
+                },
+                {
+                    "id": 2,
+                    "name": "two"
+                },
+                {
+                    "id": 3,
+                    "name": "three"
+                }
+            ]
+        }
+
+        field = {
+            "name": "friend",
+            "api": {
+                "uri": "yep",
+                "options": "numbers",
+                "option": "id",
+                "title": "name"
+            }
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields["friend"].options, [1, 2, 3])
+        self.assertEqual(fields["friend"].content['titles'], {
+            1: "one",
+            2: "two",
+            3: "three"
+        })
 
     @unittest.mock.patch('service.os.path.exists')
     @unittest.mock.patch('service.open', create=True)

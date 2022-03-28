@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: docker.io/gaf3/cnc-forge-api:0.1.4
+        image: docker.io/gaf3/cnc-forge-api:0.2.0
         imagePullPolicy: Always
         ports:
         - containerPort: 80
