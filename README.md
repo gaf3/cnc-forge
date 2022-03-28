@@ -86,12 +86,7 @@ API lookup
   description: JIRA ticket associated with the task
   api:
     uri: $ Url endpoint to hit
-    params: # What to put in the query string
-      name: value
-    body: # what to put in the JSON body
-    options: # Key in the return body that referances array, if blank will use whole body as array
-    option: # Key in each array element to use as option value
-    title: # Key in each array element to use as title value (optional)
+    verify: True # whether to do tls verify (default True)
     auth: # Secrets separate
       username: # What to use for basic auth
         secret: # Name of secret to use
@@ -105,6 +100,13 @@ API lookup
       name: value
       name:
         secret: # Name of secret to use
+    params: # What to put in the query string
+      name: value
+    body: # what to put in the JSON body
+    options: # Key in the return body that referances array, if blank will use whole body as array
+    option: # Key in each array element to use as option value
+    title: # Key in each array element to use as title value (optional)
+
 ```
 
 Secret can also be

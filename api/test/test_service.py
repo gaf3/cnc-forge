@@ -394,7 +394,8 @@ class TestCnC(TestRestful):
                     "{{ stuff }}",
                     {
                         "secret": {"name": "{{ things }}", "path": "people"}
-                    }
+                    },
+                    True
                 ]
             },
             {
@@ -405,7 +406,8 @@ class TestCnC(TestRestful):
         ), {
             "stuff": [
                 "things",
-                "stuff"
+                "stuff",
+                True
             ]
         })
 
@@ -442,6 +444,7 @@ class TestCnC(TestRestful):
                     "path": "people"
                 }
             },
+            "verify": False,
             "params": {"yin": "{{ a }}"},
             "body": {"yang": "{{ b }}"},
             "auth": {"secret": "auth.yaml"},
@@ -468,7 +471,7 @@ class TestCnC(TestRestful):
             "options": [1, 2, 3]
         })
 
-        mock_session.return_value.auth.assert_called_once_with("me", "ssh")
+        self.assertEqual(mock_session.return_value.auth, ("me", "ssh"))
 
         self.assertEqual(mock_session.return_value.headers, {
             "Authorization": "Bearer toll",
@@ -478,6 +481,7 @@ class TestCnC(TestRestful):
 
         mock_session.return_value.get.assert_called_once_with(
             "stuff",
+            verify=False,
             params={"yin": '1'},
             json={"yang": '2'}
         )

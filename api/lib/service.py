@@ -235,7 +235,10 @@ class CnC(flask_restful.Resource):
 
             return {self.render(key, values): self.render(value, values) for key, value in template.items()}
 
-        return [self.render(value, values) for value in template]
+        if isinstance(template, list):
+            return [self.render(value, values) for value in template]
+
+        return template
 
     def api(self, api, values, extra):
         """
@@ -245,12 +248,13 @@ class CnC(flask_restful.Resource):
         session = requests.Session()
 
         uri = self.render(api["uri"], values)
+        verify = self.render(api.get("verify", True), values)
         params = self.render(api.get("params", {}), values)
         body = self.render(api.get("body", {}), values)
 
         if "auth" in api:
             auth = self.render(api["auth"], values)
-            session.auth(auth["username"], auth["password"])
+            session.auth = (auth["username"], auth["password"])
 
         if "token" in api:
             token = self.render(api["token"], values)
@@ -258,7 +262,7 @@ class CnC(flask_restful.Resource):
 
         session.headers.update(self.render(api.get("headers", {}), values))
 
-        results = session.get(uri, params=params, json=body).json()
+        results = session.get(uri, verify=verify, params=params, json=body).json()
 
         if "options" in api:
             results = results[self.render(api["options"], values)]
