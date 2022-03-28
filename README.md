@@ -79,6 +79,46 @@ output: # The Code and Changes to craft.
   iterate: # Iterate from a list variable into a new variable
 ```
 
+API lookup
+
+```yaml
+- name: dynamic
+  description: JIRA ticket associated with the task
+  api:
+    uri: $ Url endpoint to hit
+    verify: True # whether to do tls verify (default True)
+    auth: # Secrets separate
+      username: # What to use for basic auth
+        secret: # Name of secret to use
+      password: # What to use for basic auth
+        secret: # Name of secret to use
+    auth: # Secrets together
+      secret: # Name of secret to use (username and password fields)
+    token: # What to use for bearer token
+      secret: # Name of secret to use
+    headers: # Extra headers to send
+      name: value
+      name:
+        secret: # Name of secret to use
+    params: # What to put in the query string
+      name: value
+    body: # what to put in the JSON body
+    options: # Key in the return body that referances array, if blank will use whole body as array
+    option: # Key in each array element to use as option value
+    title: # Key in each array element to use as title value (optional)
+
+```
+
+Secret can also be
+
+```yaml
+secret:
+  name: # The name of the secret
+  path: # Path to the secret in dot/arrya format
+```
+
+Else it'll just grab the whole secret as the value
+
 Some experiental ideas
 
 ```

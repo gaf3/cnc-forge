@@ -12,6 +12,7 @@ import json
 
 import yaml
 import redis
+import requests
 
 import flask
 import flask_restful
@@ -153,7 +154,7 @@ class CnC(flask_restful.Resource):
     @staticmethod
     def port(name):
         """
-        Calculate a port vsalue based of a name
+        Calculate a port value based of a name
         """
 
         words = name.upper().split('-', 1)
@@ -197,6 +198,91 @@ class CnC(flask_restful.Resource):
 
         return True
 
+    def secret(self, secret, values):
+        """
+        Gets a secret for API
+        """
+
+        if isinstance(secret, str):
+
+            path = self.render(secret, values)
+            with open(f"/opt/service/secret/{path}", "r") as secret_file:
+                value = secret_file.read()
+            if path.split('.')[-1] in ['json', 'yml', 'yaml']:
+                value = yaml.safe_load(value)
+
+        else:
+
+            value = self.secret(secret["name"], values)
+
+            if "path" in secret:
+                value = self.render("{{%s}}" % self.render(secret["path"], values), value)
+
+        return value
+
+    def render(self, template, values):
+        """
+        Gets a value of API
+        """
+
+        if isinstance(template, str):
+            return self.env.from_string(template).render(**values)
+
+        if isinstance(template, dict):
+
+            if "secret" in template:
+                return self.secret(template["secret"], values)
+
+            return {self.render(key, values): self.render(value, values) for key, value in template.items()}
+
+        if isinstance(template, list):
+            return [self.render(value, values) for value in template]
+
+        return template
+
+    def api(self, api, values, extra):
+        """
+        Gets options for API
+        """
+
+        session = requests.Session()
+
+        uri = self.render(api["uri"], values)
+        verify = self.render(api.get("verify", True), values)
+        params = self.render(api.get("params", {}), values)
+        body = self.render(api.get("body", {}), values)
+
+        if "auth" in api:
+            auth = self.render(api["auth"], values)
+            session.auth = (auth["username"], auth["password"])
+
+        if "token" in api:
+            token = self.render(api["token"], values)
+            session.headers["Authorization"] = f"Bearer {token}"
+
+        session.headers.update(self.render(api.get("headers", {}), values))
+
+        results = session.get(uri, verify=verify, params=params, json=body).json()
+
+        if "options" in api:
+            results = results[self.render(api["options"], values)]
+
+        option = api.get("option")
+        title = api.get("title")
+
+        extra["options"] = []
+
+        if title is not None:
+            extra["titles"] = {}
+
+        for result in results:
+            if option is not None:
+                extra["options"].append(result[option])
+                if title is not None:
+                    extra["titles"][result[option]] = result[title]
+            else:
+                extra["options"].append(result)
+
     def field(self, fields, field):
         """
         Adds a field if requires and conditions are satsified
@@ -212,7 +298,12 @@ class CnC(flask_restful.Resource):
         if isinstance(default, str):
             default = self.env.from_string(field["default"]).render(**values)
 
-        fields.append({**field, "default": default})
+        extra = {"default": default}
+
+        if "api" in field:
+            self.api(field["api"], values, extra)
+
+        fields.append({**field, **extra})
 
     def fields(self, forge, values):
         """
