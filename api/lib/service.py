@@ -193,8 +193,13 @@ class CnC(flask_restful.Resource):
             if require not in fields or not fields[require].validate(store=False):
                 return False
 
-        if "condition" in field and self.env.from_string(field["condition"]).render(**values) != "True":
-            return False
+        if "condition" in field:
+
+            if isinstance(field["condition"], bool):
+                return field["condition"]
+
+            if self.env.from_string(field["condition"]).render(**values) != "True":
+                return False
 
         return True
 
@@ -226,6 +231,10 @@ class CnC(flask_restful.Resource):
         """
 
         if isinstance(template, str):
+
+            if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
+                return self.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
+
             return self.env.from_string(template).render(**values)
 
         if isinstance(template, dict):
@@ -290,15 +299,14 @@ class CnC(flask_restful.Resource):
 
         values = self.values(fields)
 
+        field = self.render(field, values)
+
         if not self.satisfied(fields, field, values):
             return
 
-        default = field.get("default")
+        field.setdefault("default", None)
 
-        if isinstance(default, str):
-            default = self.env.from_string(field["default"]).render(**values)
-
-        extra = {"default": default}
+        extra = {}
 
         if "api" in field:
             self.api(field["api"], values, extra)

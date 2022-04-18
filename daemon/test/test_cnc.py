@@ -29,6 +29,10 @@ class TestCnC(unittest.TestCase):
         self.assertEqual({"b": '1'}, self.cnc.transform({"b": "{{ a }}"}, {"a": 1}))
         self.assertEqual('True', self.cnc.transform("{{ a == 1 }}", {"a": 1}))
         self.assertEqual('False', self.cnc.transform("{{ a != 1 }}", {"a": 1}))
+        self.assertEqual(True, self.cnc.transform(True, {}))
+        self.assertEqual(False, self.cnc.transform(False, {}))
+        self.assertEqual(True, self.cnc.transform("{? 1 == 1 ?}", {}))
+        self.assertEqual(False, self.cnc.transform("{? 1 == 0 ?}", {}))
 
     def test_transpose(self):
 
@@ -71,6 +75,13 @@ class TestCnC(unittest.TestCase):
 
         block = {
             "condition": "{{ a == 1 }}"
+        }
+
+        self.assertTrue(self.cnc.condition(block, {"a": 1}))
+        self.assertFalse(self.cnc.condition(block, {"a": 2}))
+
+        block = {
+            "condition": "{? a == 1 ?}"
         }
 
         self.assertTrue(self.cnc.condition(block, {"a": 1}))
