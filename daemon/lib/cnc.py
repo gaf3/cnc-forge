@@ -30,12 +30,16 @@ class CnC:
         Transform whatever's sent, either str or recurse through
         """
 
+        if isinstance(template, str):
+            if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
+                return self.daemon.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
+            return self.daemon.env.from_string(template).render(**values)
         if isinstance(template, list):
             return [self.transform(item, values) for item in template]
         if isinstance(template, dict):
             return {key: self.transform(item, values) for key, item in template.items()}
 
-        return self.daemon.env.from_string(template).render(**values)
+        return template
 
     @staticmethod
     def transpose(block, values):
@@ -70,7 +74,15 @@ class CnC:
         Evaludates condition in values
         """
 
-        return "condition" not in block or self.transform(block["condition"], values) == "True"
+        if "condition" not in block:
+            return True
+
+        value = self.transform(block["condition"], values)
+
+        if isinstance(value, bool):
+            return value
+
+        return value == "True"
 
     def each(self, blocks, values):
         """

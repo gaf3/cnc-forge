@@ -360,9 +360,29 @@ class TestCnC(TestRestful):
 
         self.assertFalse(cnc.satisfied(fields, field, values))
 
+        field = {
+            "name": "happy",
+            "condition": False,
+        }
+
+        self.assertFalse(cnc.satisfied(fields, field, values))
+
         # satisfied
 
+        field = {
+            "name": "happy",
+            "condition": "{{ some == 'funny' }}",
+            "requires": "some"
+        }
+
         values["some"] = "funny"
+
+        self.assertTrue(cnc.satisfied(fields, field, values))
+
+        field = {
+            "name": "happy",
+            "condition": True,
+        }
 
         self.assertTrue(cnc.satisfied(fields, field, values))
 
@@ -395,7 +415,9 @@ class TestCnC(TestRestful):
                     {
                         "secret": {"name": "{{ things }}", "path": "people"}
                     },
-                    True
+                    True,
+                    "{? 1 == 0 ?}",
+                    "{? 1 == 1 ?}"
                 ]
             },
             {
@@ -407,6 +429,8 @@ class TestCnC(TestRestful):
             "stuff": [
                 "things",
                 "stuff",
+                True,
+                False,
                 True
             ]
         })
