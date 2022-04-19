@@ -179,9 +179,9 @@ class CnC(flask_restful.Resource):
 
         return values
 
-    def satisfied(self, fields, field, values):
+    def ready(self, fields, field):
         """
-        Determines with the criteria for a field are satisfied
+        Determines whether the field is ready, requirements wise
         """
 
         requires = field.get("requires", [])
@@ -193,12 +193,19 @@ class CnC(flask_restful.Resource):
             if require not in fields or not fields[require].validate(store=False):
                 return False
 
+        return True
+
+    def satisfied(self, field):
+        """
+        Determines whether the conditions for a field are satisfied
+        """
+
         if "condition" in field:
 
             if isinstance(field["condition"], bool):
                 return field["condition"]
 
-            if self.env.from_string(field["condition"]).render(**values) != "True":
+            if field["condition"] != "True":
                 return False
 
         return True
@@ -299,9 +306,12 @@ class CnC(flask_restful.Resource):
 
         values = self.values(fields)
 
+        if not self.ready(fields, field):
+            return
+
         field = self.render(field, values)
 
-        if not self.satisfied(fields, field, values):
+        if not self.satisfied(field):
             return
 
         field.setdefault("default", None)
