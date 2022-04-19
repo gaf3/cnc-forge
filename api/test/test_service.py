@@ -318,7 +318,7 @@ class TestCnC(TestRestful):
             "some": "fun"
         })
 
-    def test_satisfied(self):
+    def test_ready(self):
 
         cnc = service.CnC()
 
@@ -330,9 +330,8 @@ class TestCnC(TestRestful):
             "name": "moar",
             "requires": "some"
         }
-        values = {}
 
-        self.assertFalse(cnc.satisfied(fields, field, values))
+        self.assertFalse(cnc.ready(fields, field))
 
         # invalid
 
@@ -341,50 +340,49 @@ class TestCnC(TestRestful):
             "required": True
         })
 
-        self.assertFalse(cnc.satisfied(fields, field, values))
+        self.assertFalse(cnc.ready(fields, field))
 
         # requirement met
 
         fields["some"].value = "fun"
-        values["some"] = "fun"
 
-        self.assertTrue(cnc.satisfied(fields, field, values))
+        self.assertTrue(cnc.ready(fields, field))
+
+    def test_satisfied(self):
+
+        cnc = service.CnC()
 
         # unsatisfied
 
         field = {
             "name": "happy",
-            "condition": "{{ some == 'funny' }}",
-            "requires": "some"
+            "condition": "False"
         }
 
-        self.assertFalse(cnc.satisfied(fields, field, values))
+        self.assertFalse(cnc.satisfied(field))
 
         field = {
             "name": "happy",
             "condition": False,
         }
 
-        self.assertFalse(cnc.satisfied(fields, field, values))
+        self.assertFalse(cnc.satisfied(field))
 
         # satisfied
 
         field = {
             "name": "happy",
-            "condition": "{{ some == 'funny' }}",
-            "requires": "some"
+            "condition": "True"
         }
 
-        values["some"] = "funny"
-
-        self.assertTrue(cnc.satisfied(fields, field, values))
+        self.assertTrue(cnc.satisfied(field))
 
         field = {
             "name": "happy",
             "condition": True,
         }
 
-        self.assertTrue(cnc.satisfied(fields, field, values))
+        self.assertTrue(cnc.satisfied(field))
 
     @unittest.mock.patch('service.open', create=True)
     def test_secret(self, mock_open):
@@ -559,6 +557,15 @@ class TestCnC(TestRestful):
         field = {
             "name": "moar",
             "requires": "some"
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 0)
+
+        field = {
+            "name": "moar",
+            "condition": False
         }
 
         cnc.field(fields, field)
