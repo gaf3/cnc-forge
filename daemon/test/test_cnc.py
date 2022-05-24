@@ -103,13 +103,14 @@ class TestCnC(unittest.TestCase):
                 "c": "cs",
                 "d": "ds"
             },
-            "condition": "{{ c != 3 and d != 't' }}"
+            "condition": "{{ c != 3 and d != 't' }}",
+            "values": {"L": 7}
         }
 
         self.assertEqual(list(self.cnc.each(block, values)), [
-            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "n"}),
-            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "u"}),
-            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "s"})
+            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "n", "L": 7}),
+            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "u", "L": 7}),
+            (block, {"a": 1, "cs": [2, 3], "ds": "nuts", "b": 1, "c": 2, "d": "s", "L": 7})
         ])
 
     def test_exclude(self):

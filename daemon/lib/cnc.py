@@ -94,7 +94,8 @@ class CnC:
             blocks = [blocks]
 
         for block in blocks:
-            for iterate_values in self.iterate(block, values):
+            inject_values = {**values, **block.get("values", {})}
+            for iterate_values in self.iterate(block, inject_values):
                 block_values = {**values, **iterate_values}
                 if self.condition(block, block_values):
                     yield copy.deepcopy(block), block_values
