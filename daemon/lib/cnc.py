@@ -95,7 +95,7 @@ class CnC:
 
         for block in blocks:
             for iterate_values in self.iterate(block, values):
-                block_values = {**values, **iterate_values}
+                block_values = {**values, **iterate_values, **block.get("values", {})}
                 if self.condition(block, block_values):
                     yield copy.deepcopy(block), block_values
 
