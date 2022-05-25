@@ -591,6 +591,22 @@ class TestCnC(TestRestful):
         self.assertEqual(len(fields), 2)
         self.assertEqual(fields["happy"].default, "7085 bone")
 
+        # update
+
+        field = {
+            "name": "happy",
+            "options": [1, 2, 3],
+            "requires": "some"
+        }
+
+        cnc.field(fields, field)
+
+        self.assertEqual(len(fields), 2)
+        self.assertEqual(fields["happy"].default, "7085 bone")
+        self.assertEqual(fields["happy"].options, [1, 2, 3])
+
+        # api
+
         mock_session.return_value.get.return_value.json.return_value = {
             "numbers": [
                 {

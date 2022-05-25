@@ -314,14 +314,15 @@ class CnC(flask_restful.Resource):
         if not self.satisfied(field):
             return
 
-        field.setdefault("default", None)
+        if field["name"] not in fields:
+            field.setdefault("default", None)
 
         extra = {}
 
         if "api" in field:
             self.api(field["api"], values, extra)
 
-        fields.append({**field, **extra})
+        fields.update({**field, **extra})
 
     def fields(self, forge, values):
         """
