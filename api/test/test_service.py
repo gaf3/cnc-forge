@@ -727,13 +727,13 @@ class TestCnC(TestRestful):
             "input": {
                 "fields": [
                     {
-                        "name": "craft"
+                        "name": "code"
                     }
                 ]
             }
         }
 
-        self.assertRaisesRegex(Exception, "field name 'craft' is reserved", cnc.fields, forge, {})
+        self.assertRaisesRegex(Exception, "field name 'code' is reserved", cnc.fields, forge, {})
 
     @unittest.mock.patch("service.Forge.forge")
     @unittest.mock.patch("service.Forge.forges")

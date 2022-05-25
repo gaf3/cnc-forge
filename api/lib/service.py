@@ -37,7 +37,6 @@ FIELDS = [
 
 RESERVED = [
     "forge",
-    "craft",
     "code",
     "cnc"
 ]
