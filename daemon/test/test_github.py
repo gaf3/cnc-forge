@@ -287,7 +287,8 @@ class TestGitHub(unittest.TestCase):
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
-            unittest.mock.call("git branch", shell=True),
+            unittest.mock.call("git branch | grep '*'", shell=True),
+            unittest.mock.call("git branch --all", shell=True),
             unittest.mock.call("git checkout maine", shell=True)
         ])
         mock_print.assert_has_calls([
@@ -298,7 +299,10 @@ class TestGitHub(unittest.TestCase):
         # new branch
 
         github = {
-            "repo": "my/stuff",
+            "repo": {
+                "full_name": "my/stuff",
+                "base_branch": "mainer"
+            },
             "prefix": "YOLO-420",
             "hook": "here"
         }
@@ -308,9 +312,7 @@ class TestGitHub(unittest.TestCase):
         self.assertEqual(github, {
             "repo": {
                 "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
+                "base_branch": "mainer",
                 "url": "ya"
             },
             "hook": [{
@@ -323,7 +325,9 @@ class TestGitHub(unittest.TestCase):
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
-            unittest.mock.call("git branch", shell=True),
+            unittest.mock.call("git branch | grep '*'", shell=True),
+            unittest.mock.call("git checkout mainer", shell=True),
+            unittest.mock.call("git branch --all", shell=True),
             unittest.mock.call("git checkout -b YOLO-420-sweat", shell=True)
         ])
 

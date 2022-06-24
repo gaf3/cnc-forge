@@ -168,7 +168,10 @@ class GitHub:
 
         os.chdir(destination)
 
-        if github['branch'].encode() not in subprocess.check_output("git branch", shell=True):
+        if github['repo']['base_branch'].encode() not in subprocess.check_output("git branch | grep '*'", shell=True):
+            print(subprocess.check_output(f"git checkout {github['repo']['base_branch']}", shell=True))
+
+        if github['branch'].encode() not in subprocess.check_output("git branch --all", shell=True):
             github['upstream'] = True
             print(subprocess.check_output(f"git checkout -b {github['branch']}", shell=True))
         else:
