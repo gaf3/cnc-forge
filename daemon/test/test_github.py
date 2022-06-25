@@ -164,9 +164,14 @@ class TestGitHub(unittest.TestCase):
             "html_url": "ya"
         }])
 
+        github = {
+            "repo": repo,
+            "branch": "exists"
+        }
+
         # exists
 
-        self.assertEqual(self.github.pull_request(repo, "exists", "exists"), {
+        self.assertEqual(self.github.pull_request(github, "exists"), {
             "title": "exists",
             "url": "ya"
         })
@@ -179,7 +184,12 @@ class TestGitHub(unittest.TestCase):
 
         self.github.api.request.return_value.json.return_value = {"html_url": "sure"}
 
-        self.assertEqual(self.github.pull_request(repo, "doesnt", {"body": "rock"}), {
+        github = {
+            "repo": repo,
+            "branch": "doesnt"
+        }
+
+        self.assertEqual(self.github.pull_request(github, {"body": "rock"}), {
             "title": "doesnt",
             "body": "rock",
             "url": "sure"
@@ -287,7 +297,6 @@ class TestGitHub(unittest.TestCase):
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
-            unittest.mock.call("git branch | grep '*'", shell=True),
             unittest.mock.call("git branch --all", shell=True),
             unittest.mock.call("git checkout maine", shell=True)
         ])
@@ -300,11 +309,11 @@ class TestGitHub(unittest.TestCase):
 
         github = {
             "repo": {
-                "full_name": "my/stuff",
-                "base_branch": "mainer"
+                "full_name": "my/stuff"
             },
             "prefix": "YOLO-420",
-            "hook": "here"
+            "hook": "here",
+            "base": "mainer"
         }
 
         self.github.clone(cnc, github)
@@ -312,14 +321,15 @@ class TestGitHub(unittest.TestCase):
         self.assertEqual(github, {
             "repo": {
                 "full_name": "my/stuff",
-                "base_branch": "mainer",
-                "url": "ya"
+                "url": "ya",
+                "base_branch": "maine"
             },
             "hook": [{
                 "url": "here"
             }],
             "prefix": "YOLO-420",
             "branch": "YOLO-420-sweat",
+            "base": "mainer",
             "upstream": True
         })
 

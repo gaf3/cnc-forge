@@ -109,7 +109,7 @@ class GitHub:
 
         return hooks
 
-    def pull_request(self, repo, branch, pull_request):
+    def pull_request(self, github, pull_request):
         """
         Ensures a pull request exists
         """
@@ -117,22 +117,22 @@ class GitHub:
         if isinstance(pull_request, str):
             pull_request = {"title": pull_request}
         else:
-            pull_request.setdefault("title", branch)
+            pull_request.setdefault("title", github['branch'])
 
-        for exists in self.iterate(f"repos/{repo['full_name']}/pulls"):
-            if exists["head"]["ref"] == branch:
+        for exists in self.iterate(f"repos/{github['repo']['full_name']}/pulls"):
+            if exists["head"]["ref"] == github['branch']:
                 pull_request["url"] = exists["html_url"]
                 return pull_request
 
         create = {
-            "head": branch,
-            "base": repo['base_branch'],
+            "head": github['branch'],
+            "base": github.get('base', github['repo']['base_branch']),
             **pull_request
         }
 
         print(create)
 
-        pull_request["url"] = self.request("POST", f"repos/{repo['full_name']}/pulls", json=create)["html_url"]
+        pull_request["url"] = self.request("POST", f"repos/{github['repo']['full_name']}/pulls", json=create)["html_url"]
 
         return pull_request
 
@@ -168,8 +168,8 @@ class GitHub:
 
         os.chdir(destination)
 
-        if github['repo']['base_branch'].encode() not in subprocess.check_output("git branch | grep '*'", shell=True):
-            print(subprocess.check_output(f"git checkout {github['repo']['base_branch']}", shell=True))
+        if 'base' in github and github['base'].encode() not in subprocess.check_output("git branch | grep '*'", shell=True):
+            print(subprocess.check_output(f"git checkout {github['base']}", shell=True))
 
         if github['branch'].encode() not in subprocess.check_output("git branch --all", shell=True):
             github['upstream'] = True
@@ -242,7 +242,7 @@ class GitHub:
                 print(subprocess.check_output("git push origin", shell=True))
 
         if github.get("branch") != github["repo"]["base_branch"]:
-            github["pull_request"] = self.pull_request(github["repo"], github["branch"], github.get("pull_request", github["branch"]))
+            github["pull_request"] = self.pull_request(github, github.get("pull_request", github["branch"]))
             cnc.link(github["pull_request"]["url"])
         else:
             cnc.link(github["repo"]["url"])
