@@ -9,12 +9,10 @@ up:
 	echo "- op: replace\n  path: /spec/template/spec/volumes/0/hostPath/path\n  value: $(PWD)/cnc" > kubernetes/tilt/cnc.yaml
 	test -f secret/redis.json || echo '{"host": "redis.cnc-forge"}' > secret/redis.json
 	test -f secret/github.json || echo '{"user": "changeme", "token": "*******"}' > secret/github.json
-	kubectx docker-desktop
-	tilt --port $(TILT_PORT) up
+	tilt --port $(TILT_PORT) up --context docker-desktop
 
 down:
-	kubectx docker-desktop
-	tilt down
+	tilt down --context docker-desktop
 
 tag:
 	-git tag -a "v$(VERSION)" -m "Version $(VERSION)"
