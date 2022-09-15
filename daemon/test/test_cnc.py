@@ -13,14 +13,15 @@ class TestCnC(unittest.TestCase):
 
         daemon = unittest.mock.MagicMock()
         daemon.env = jinja2.Environment()
-        self.cnc = cnc.CnC(daemon)
-        self.cnc.data = {"id": "sweat"}
+        self.cnc = cnc.CnC(daemon, {"id": "sweat"})
 
     def test___init__(self):
 
         daemon = unittest.mock.MagicMock()
         daemon.env = jinja2.Environment()
-        self.assertEqual(cnc.CnC(daemon).daemon, daemon)
+        init = cnc.CnC(daemon, {})
+        self.assertEqual(init.daemon, daemon)
+        self.assertEqual(init.data, {})
 
     def test_transform(self):
 
@@ -657,7 +658,8 @@ class TestCnC(unittest.TestCase):
             "transform": ["l"]
         }, {"start": "a/b"})
 
-    def test_change(self):
+    @unittest.mock.patch("github.GitHub")
+    def test_change(self, mock_github):
 
         self.cnc.content = unittest.mock.MagicMock()
 
@@ -673,14 +675,15 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.change(change, {"here": "there"})
 
-        self.cnc.daemon.github.change.assert_called_once_with(self.cnc, {"repo": "there"})
+        mock_github.return_value.change.assert_called_once_with()
 
         self.cnc.content.assert_called_once_with(
             {"condition": "{{ here == 'there' }}"},
             {"here": "there"}
         )
 
-    def test_code(self):
+    @unittest.mock.patch("github.GitHub")
+    def test_code(self, mock_github):
 
         self.cnc.change = unittest.mock.MagicMock()
 
@@ -696,14 +699,14 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.code(code, {"here": "there"})
 
-        self.cnc.daemon.github.clone.assert_called_once_with(self.cnc, {"repo": "there"})
+        mock_github.return_value.code.assert_called_once_with()
 
         self.cnc.change.assert_called_once_with(
             {"condition": "{{ here == 'there' }}"},
             {"here": "there"}
         )
 
-        self.cnc.daemon.github.commit.assert_called_once_with(self.cnc, {"repo": "there"})
+        mock_github.return_value.commit.assert_called_once_with()
 
     def test_link(self):
 
@@ -719,7 +722,7 @@ class TestCnC(unittest.TestCase):
 
         # Testing
 
-        data = {
+        self.cnc.data = {
             "id": "sweat",
             "output": {
                 "code": [
@@ -731,9 +734,9 @@ class TestCnC(unittest.TestCase):
             "test": True
         }
 
-        self.cnc.process(data)
+        self.cnc.process()
 
-        self.assertEqual(data, {
+        self.assertEqual(self.cnc.data , {
             "id": "sweat",
             "output": {
                 "code": [
@@ -764,7 +767,7 @@ class TestCnC(unittest.TestCase):
 
         # Committing
 
-        data = {
+        self.cnc.data = {
             "id": "sweat",
             "output": {
                 "code": [
@@ -776,7 +779,7 @@ class TestCnC(unittest.TestCase):
             "test": False
         }
 
-        self.cnc.process(data)
+        self.cnc.process()
 
         mock_rmtree.assert_has_calls([
             unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),

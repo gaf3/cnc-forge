@@ -84,9 +84,7 @@ class TestService(unittest.TestCase):
         self.assertEqual(daemon.sleep, 7)
 
         self.assertEqual(daemon.redis.host, "redi.com")
-        self.assertEqual(daemon.github.host, "git.com")
-
-        self.assertEqual(daemon.cnc.daemon, daemon)
+        self.assertEqual(daemon.github['host'], "git.com")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("mkdir -p /root/.ssh", shell=True),

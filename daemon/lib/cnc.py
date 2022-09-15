@@ -12,17 +12,19 @@ import yaml
 import shutil
 import fnmatch
 
+import github
+
 class CnC:
     """
     Class that craft the code and changes
     """
 
-    def __init__(self, daemon):
+    def __init__(self, daemon, data):
         """
         Store the daemon
         """
 
-        self.data = None
+        self.data = data
         self.daemon = daemon
 
     def transform(self, template, values):
@@ -377,7 +379,6 @@ class CnC:
                 content[collection] = [content[collection]]
             content[collection] = [pattern[:-1] if pattern[-1] == "/" else pattern for pattern in content[collection]]
 
-
         # Transform the source on templating
 
         content["source"] = self.transform(content["source"], values)
@@ -402,9 +403,13 @@ class CnC:
 
         # If there's a github block, use it to pull the code
 
+        controller = None
+
         if "github" in change:
             change["github"] = self.transform(change["github"], values)
-            self.daemon.github.change(self, change["github"])
+            controller = github.GitHub(self, self.daemon.github, change["github"])
+
+        controller.change()
 
         # Go through each content, which it'll check conditions, transpose, and iterate
 
@@ -418,9 +423,13 @@ class CnC:
 
         # If there's a github block, use it to checkout the code
 
+        controller = None
+
         if "github" in code:
             code["github"] = self.transform(code["github"], values)
-            self.daemon.github.clone(self, code["github"])
+            controller = github.GitHub(self, self.daemon.github, code["github"])
+
+        controller.code()
 
         # Go through each change, which it'll check conditions, transpose, and iterate
 
@@ -429,8 +438,7 @@ class CnC:
 
         # If there's a github block, use it to commit the code
 
-        if "github" in code:
-            self.daemon.github.commit(self, code["github"])
+        controller.commit()
 
     def link(self, link):
         """
@@ -442,14 +450,10 @@ class CnC:
         if link not in self.data["links"]:
             self.data["links"].append(link)
 
-    def process(self, data):
+    def process(self):
         """
         Process a CnC
         """
-
-        # Store the data
-
-        self.data = data
 
         # Store the outputs untransformed code to root so
         # We don't change what's originally there

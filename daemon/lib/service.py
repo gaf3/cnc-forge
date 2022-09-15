@@ -12,7 +12,6 @@ import redis
 import jinja2
 
 import cnc
-import github
 
 class Daemon:
     """
@@ -24,12 +23,10 @@ class Daemon:
         self.sleep = int(os.environ['SLEEP'])
 
         with open("/opt/service/secret/redis.json", "r") as redis_file:
-            self.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.loads(redis_file.read()))
+            self.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.load(redis_file))
 
         with open("/opt/service/secret/github.json", "r") as github_file:
-            self.github = github.GitHub(**json.loads(github_file.read()))
-
-        self.cnc = cnc.CnC(self)
+            self.github = json.load(github_file)
 
         subprocess.check_output("mkdir -p /root/.ssh", shell=True)
         subprocess.check_output("cp /opt/service/secret/github.key /root/.ssh/", shell=True)
@@ -52,7 +49,7 @@ class Daemon:
                 continue
 
             try:
-                self.cnc.process(data)
+                cnc.CnC(self, data).process()
             except Exception as exception:
                 data["status"] = "Error"
                 data["error"] = str(exception)
