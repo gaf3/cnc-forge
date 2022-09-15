@@ -4,28 +4,68 @@ Module for interacting with GitHub
 
 import os
 import shutil
+import base64
 import requests
 import subprocess
+
 
 class GitHub:
     """
     Class for interacting with GitHub
+    data fields:
+        api: API to use set by the user
+        repo: repo from settings
+        name: name of the repo
+        org: IF there's an org to do
+        user: If this is owned by a user
+        path: Full path to access the repo
+        hook: The hook(s) to use
+        prefix: Prefix to use for branch and title
+        title: Title for the PR
+        default: THe default branch of the repo
+        branch: THe branch for the PR
+        base: The base branch of the PR
+        url: The pull equest url
     """
 
-    def __init__(self, user, token, url="https://api.github.com"):
+    data = None
 
-        self.user = user
-        self.token = token
+    def __init__(self, cnc, creds, data):
+
+        self.cnc = cnc
+        self.user = creds['user']
         self.api = requests.Session()
-        self.api.auth = (self.user, self.token)
-        self.url = url
+        self.api.auth = (self.user, creds['token'])
+        self.data = data
+
+        self.data.setdefault("api", "https://api.github.com")
+
+        if isinstance(self.data["repo"], str):
+
+            if "/" in self.data["repo"]:
+                self.data["path"] = self.data["repo"]
+                self.data["org"], name = self.data["repo"].split("/")
+            else:
+                self.data["path"] = f"{self.user}/{self.data['repo']}"
+                self.data["user"] = self.user
+                name = self.data['repo']
+
+            self.data.setdefault("name", name)
+            self.data.setdefault("path", f"{self.data.get('org') or self.data['user']}/{name}")
+
+        if "hook" in self.data:
+
+            if isinstance(self.data["hook"], str):
+                self.data["hook"] = [self.data["hook"]]
+
+            self.data["hook"] = [{"url": hook} if isinstance(hook, str) else hook for hook in self.data["hook"]]
 
     def request(self, method, path, params=None, json=None):
         """
         Performs a request and return the JSON
         """
 
-        response = self.api.request(method, f"{self.url}/{path}", params=params, json=json)
+        response = self.api.request(method, f"{self.data['api']}/{path}", params=params, json=json)
 
         response.raise_for_status()
 
@@ -49,182 +89,191 @@ class GitHub:
             params = {**params, "page": params["page"] + 1}
             results = self.request("GET", path, params, json)
 
-    def repo(self, repo, ensure=True):
+    def repo(self):
         """
-        Ensure a repo exists, whether org or user
+        Ensure a repo exists, and can be checked out and committed against
         """
 
-        if isinstance(repo, str):
-            if "/" in repo:
-                repo = {"full_name": repo}
-                repo["org"], repo["name"] = repo["full_name"].split("/")
-            else:
-                repo = {"name": repo}
+        # First make sure the repo exists
 
-        if "full_name" not in repo:
-            repo["full_name"] = f"{repo.get('org') or self.user}/{repo['name']}"
+        found = False
 
         for exists in self.iterate("user/repos"):
-            if exists["full_name"] == repo["full_name"]:
-                repo.setdefault("base_branch", exists["default_branch"])
-                repo["url"] = exists["html_url"]
-                return repo
 
-        if not ensure:
-            return repo
+            if exists["full_name"] == self.data["path"]:
+                self.data["default"] = exists["default_branch"]
+                found = True
 
-        repo.setdefault("private", True)
+        if not found:
 
-        if repo.get('org'):
-            path = f"orgs/{repo['org']}/repos"
-            repo.setdefault("visibility", "internal")
-        else:
-            path = "user/repos"
+            create = {
+                "name": self.data["name"],
+                "private": True
+            }
 
-        created = self.request("POST", path, json=dict(repo))
+            if self.data.get('org'):
+                path = f"orgs/{self.data['org']}/repos"
+                create["visibility"] = "internal"
+            else:
+                path = "user/repos"
 
-        repo.setdefault("base_branch", created["default_branch"])
-        repo["url"] = created["html_url"]
+            created = self.request("POST", path, json=create)
 
-        return repo
+            self.data["default"] = created["default_branch"]
 
-    def hook(self, repo, hooks):
+        # Now make sure it has a default branch and can be cloned
+
+        if not self.request("GET", f"repos/{self.data['path']}/branches"):
+            message = f"Created by CnC Forge - {self.data['title']}"
+            self.request("PUT", f"repos/{self.data['path']}/contents/CNC", json={
+                "message": message,
+                "content": base64.b64encode(message.encode('utf-8')).decode('utf-8')
+            })
+
+        # Now that we know the default we can set the base
+
+        self.data.setdefault("base", self.data["default"])
+
+    def hook(self):
         """
         Ensure one or more hooks are on a repo
         """
 
-        if isinstance(hooks, str):
-            hooks = [hooks]
+        exists = [hook["config"]["url"] for hook in self.iterate(f"repos/{self.data['path']}/hooks")]
 
-        hooks = [{"url": hook} if isinstance(hook, str) else hook for hook in hooks]
-
-        exists = [hook["config"]["url"] for hook in self.iterate(f"repos/{repo['full_name']}/hooks")]
-
-        for hook in hooks:
+        for hook in self.data.get("hook", []):
 
             if hook['url'] in exists:
                 continue
 
-            self.request("POST", f"repos/{repo['full_name']}/hooks", json={"config": hook})
+            self.request("POST", f"repos/{self.data['path']}/hooks", json={"config": hook})
 
-        return hooks
-
-    def pull_request(self, github, pull_request):
+    def branch(self, branch, base):
         """
-        Ensures a pull request exists
+        Ensure a branch exists
         """
 
-        if isinstance(pull_request, str):
-            pull_request = {"title": pull_request}
-        else:
-            pull_request.setdefault("title", github['branch'])
+        for exists in self.iterate(f"repos/{self.data['path']}/branches"):
+            if exists["name"] == branch:
+                return
 
-        for exists in self.iterate(f"repos/{github['repo']['full_name']}/pulls"):
-            if exists["head"]["ref"] == github['branch']:
-                pull_request["url"] = exists["html_url"]
-                return pull_request
+        sha = self.request("GET", f"repos/{self.data['path']}/git/refs/heads/{base}")["object"]["sha"]
 
         create = {
-            "head": github['branch'],
-            "base": github.get('base', github['repo']['base_branch']),
-            **pull_request
+            "ref": f"refs/heads/{branch}",
+            "sha": sha
         }
 
         print(create)
 
-        pull_request["url"] = self.request("POST", f"repos/{github['repo']['full_name']}/pulls", json=create)["html_url"]
+        self.request("POST", f"repos/{self.data['path']}/git/refs", json=create)
 
-        return pull_request
-
-    def clone(self, cnc, github):
+    def pull_request(self):
         """
-        Clones a repo for a code block unless we're testing, then just creates a directory
+        Ensures a pull request exists, including the need branches
         """
 
-        os.chdir(cnc.base())
+        for exists in self.iterate(f"repos/{self.data['path']}/pulls"):
+            if exists["head"]["ref"] == self.data['branch']:
+                self.data["url"] = exists["html_url"]
+                return
 
-        destination = f"{cnc.base()}/destination"
+        create = {
+            "head": self.data['branch'],
+            "base": self.data["base"],
+            "title": self.data["title"]
+        }
 
-        shutil.rmtree(destination, ignore_errors=True)
+        print(create)
 
-        # Get the repo info and don't bother creating if we're testing
+        self.data["url"] = self.request("POST", f"repos/{self.data['path']}/pulls", json=create)["html_url"]
 
-        github["repo"] = self.repo(github["repo"], ensure=not cnc.data["test"])
-
-        # If there's not base_branch, there's no repo, so just make the destination directory and split
-
-        if "base_branch" not in github["repo"]:
-            os.makedirs(destination)
-            return
-
-        if "hook" in github:
-            github["hook"] = self.hook(github["repo"], github["hook"])
-
-        print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git destination", shell=True))
-
-        branch = f"{github['prefix']}-{cnc.data['id']}" if "prefix" in github else cnc.data["id"]
-
-        github.setdefault("branch", branch)
-
-        os.chdir(destination)
-
-        if 'base' in github and github['base'].encode() not in subprocess.check_output("git branch | grep '*'", shell=True):
-            print(subprocess.check_output(f"git checkout {github['base']}", shell=True))
-
-        if github['branch'].encode() not in subprocess.check_output("git branch --all", shell=True):
-            github['upstream'] = True
-            print(subprocess.check_output(f"git checkout -b {github['branch']}", shell=True))
-        else:
-            print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
-
-    def change(self, cnc, github):
+    def change(self):
         """
         Clones a repo for a change block
         """
 
-        github["repo"] = self.repo(github["repo"], ensure=False)
+        # If this is the same as the last repo/branch, just repo it again
 
-        # If this is the last repo/branch, just repo it again
-
-        if cnc.data.get("change") == github:
+        if self.cnc.data.get("change") == self.data:
             return
 
-        cnc.data["change"] = github
+        self.cnc.data["change"] = self.data
 
-        os.chdir(cnc.base())
+        os.chdir(self.cnc.base())
 
-        source = f"{cnc.base()}/source"
+        source = f"{self.cnc.base()}/source"
 
         shutil.rmtree(source, ignore_errors=True)
 
-        print(subprocess.check_output(f"git clone git@github.com:{github['repo']['full_name']}.git source", shell=True))
+        print(subprocess.check_output(f"git clone git@github.com:{self.data['path']}.git source", shell=True))
 
-        if github.get("create"):
-            github.setdefault("branch", github["repo"]["base_branch"])
-
-        if github.get("branch") and github["branch"] != github["repo"]["base_branch"]:
+        if "branch" in self.data:
             os.chdir(source)
-            print(subprocess.check_output(f"git checkout {github['branch']}", shell=True))
+            print(subprocess.check_output(f"git checkout {self.data['branch']}", shell=True))
 
-    def commit(self, cnc, github):
+    def code(self):
+        """
+        Clones a repo for a code block unless we're testing, then just creates a directory
+        """
+
+        os.chdir(self.cnc.base())
+
+        destination = f"{self.cnc.base()}/destination"
+
+        shutil.rmtree(destination, ignore_errors=True)
+
+        # If we're testing, just make the directory
+
+        if self.cnc.data["test"]:
+            os.makedirs(destination)
+            return
+
+        # Set some defaults for branches
+
+        branch = f"{self.data['prefix']}-{self.cnc.data['id']}" if "prefix" in self.data else self.cnc.data["id"]
+
+        self.data.setdefault("branch", branch)
+        self.data.setdefault("title", branch)
+
+        # Make sure the repo exists and has a default branch
+
+        self.repo()
+
+        # Make sure hooks are there
+
+        self.hook()
+
+        # Make sure we have all the branches we need
+
+        self.branch(self.data["base"], self.data['default'])
+        self.branch(self.data["branch"], self.data['base'])
+
+        print(subprocess.check_output(f"git clone git@github.com:{self.data['path']}.git destination", shell=True))
+
+        os.chdir(destination)
+
+        print(subprocess.check_output(f"git checkout {self.data['branch']}", shell=True))
+
+    def commit(self):
         """
         Commits a repo for a code block
         """
 
-        destination = f"{cnc.base()}/destination"
+        destination = f"{self.cnc.base()}/destination"
 
         os.chdir(destination)
 
         # If we're testing, move a code-# dir
 
-        if cnc.data["test"]:
+        if self.cnc.data["test"]:
 
             code = 0
 
-            while os.path.exists(f"{cnc.base()}/code-{code}"):
+            while os.path.exists(f"{self.cnc.base()}/code-{code}"):
                 code += 1
 
-            os.rename(destination, f"{cnc.base()}/code-{code}")
+            os.rename(destination, f"{self.cnc.base()}/code-{code}")
 
             return
 
@@ -232,17 +281,14 @@ class GitHub:
 
         if b"Changes to be committed" in subprocess.check_output("git status", shell=True):
 
-            message = f"{github['prefix']}: {cnc.data['id']}" if "prefix" in github else cnc.data["id"]
+            message = f"{self.data['prefix']}: {self.cnc.data['id']}" if "prefix" in self.data else self.cnc.data["id"]
 
             print(subprocess.check_output(f"git commit -am '{message}'", shell=True))
 
-            if github.get("upstream"):
-                print(subprocess.check_output(f"git push --set-upstream origin {github['branch']}", shell=True))
-            else:
-                print(subprocess.check_output("git push origin", shell=True))
+            print(subprocess.check_output("git push origin", shell=True))
 
-        if github.get("branch") != github["repo"]["base_branch"]:
-            github["pull_request"] = self.pull_request(github, github.get("pull_request", github["branch"]))
-            cnc.link(github["pull_request"]["url"])
-        else:
-            cnc.link(github["repo"]["url"])
+        # Make sure there's a pull request
+
+        self.pull_request()
+
+        self.cnc.link(self.data['url'])

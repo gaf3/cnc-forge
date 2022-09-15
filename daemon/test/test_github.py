@@ -1,23 +1,53 @@
 import unittest
 import unittest.mock
 
+import base64
+import requests
+
 import github
 
 class TestGitHub(unittest.TestCase):
 
+    maxDiff = None
+
     def setUp(self):
 
-        self.github = github.GitHub("me", "arcade")
+        self.github = github.GitHub("me", {"user": "arcade", "token": "fire"}, {"repo": "git.com"})
         self.github.api = unittest.mock.MagicMock()
 
     def test___init__(self):
 
-        init = github.GitHub("me", "arcade", "git.com")
+        init = github.GitHub("me", {"user": "arcade", "token": "fire"}, {"repo": "git.com"})
 
-        self.assertEqual(init.user, "me")
-        self.assertEqual(init.token, "arcade")
-        self.assertEqual(init.api.auth, ("me", "arcade"))
-        self.assertEqual(init.url, "git.com")
+        self.assertEqual(init.cnc, "me")
+        self.assertEqual(init.user, "arcade")
+        self.assertIsInstance(init.api, requests.Session)
+        self.assertEqual(init.api.auth, ("arcade", "fire"))
+        self.assertEqual(init.data, {
+            "repo": "git.com",
+            "name": "git.com",
+            "user": "arcade",
+            "api": "https://api.github.com",
+            "path": "arcade/git.com"
+        })
+
+        init = github.GitHub("me", {"user": "arcade", "token": "fire"}, {
+            "repo": "anization/git.com",
+            "hook": "captain"
+        })
+
+        self.assertEqual(init.data, {
+            "repo": "anization/git.com",
+            "org": "anization",
+            "name": "git.com",
+            "api": "https://api.github.com",
+            "path": "anization/git.com",
+            "hook": [
+                {
+                    "url": "captain"
+                }
+            ]
+        })
 
     def test_request(self):
 
@@ -58,105 +88,193 @@ class TestGitHub(unittest.TestCase):
 
     def test_repo(self):
 
-        # org exists
+        # repo exists
+
+        self.github.data = {
+            "path": "does/exist",
+            "org": "does",
+            "name": "exist"
+        }
 
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
             "full_name": "does/exist",
-            "default_branch": "maine",
-            "html_url": "yep"
+            "default_branch": "maine"
         }])
 
-        self.assertEqual(self.github.repo("does/exist"), {
-            "full_name": "does/exist",
+        self.github.request = unittest.mock.MagicMock(return_value=[True])
+
+        self.github.repo()
+
+        self.assertEqual(self.github.data, {
+            "path": "does/exist",
             "org": "does",
             "name": "exist",
-            "base_branch": "maine",
-            "url": "yep"
+            "default": "maine",
+            "base": "maine"
         })
 
         self.github.iterate.assert_called_once_with("user/repos")
+        self.github.request.assert_called_once_with("GET", "repos/does/exist/branches")
 
-        # users doesn't exist, don't create
+        # org repo dooesn't exist
 
-        self.assertEqual(self.github.repo("doesnt", False), {
-            "full_name": "me/doesnt",
-            "name": "doesnt"
-        })
+        self.github.data = {
+            "path": "doesnt/exist",
+            "org": "doesnt",
+            "name": "exist"
+        }
 
-        # org dooesn't exist, create
+        self.github.request.side_effect = [
+            {
+                "default_branch": "notracist"
+            },
+            [
+                True
+            ]
+        ]
 
-        self.github.api.request.return_value.json.return_value = {"default_branch": "notracist", "html_url": "sure"}
+        self.github.repo()
 
-        self.assertEqual(self.github.repo("doesnt/exist"), {
-            "full_name": "doesnt/exist",
+        self.assertEqual(self.github.data, {
+            "path": "doesnt/exist",
             "org": "doesnt",
             "name": "exist",
-            "private": True,
-            "visibility": "internal",
-            "base_branch": "notracist",
-            "url": "sure"
+            "default": "notracist",
+            "base": "notracist"
         })
 
-        self.github.api.request.assert_called_once_with("POST", "https://api.github.com/orgs/doesnt/repos", params=None, json={
-            "full_name": "doesnt/exist",
-            "org": "doesnt",
+        self.github.request.assert_has_calls([
+            unittest.mock.call("POST", "orgs/doesnt/repos", json={
+                "name": "exist",
+                "private": True,
+                "visibility": "internal"
+            })
+        ])
+
+        # user repo doesn't exist
+
+        self.github.data = {
+            "path": "dont/exist",
+            "user": "dont",
+            "name": "exist"
+        }
+
+        self.github.request.side_effect = [
+            {
+                "default_branch": "wtfdude"
+            },
+            [
+                True
+            ]
+        ]
+
+        self.github.repo()
+
+        self.assertEqual(self.github.data, {
+            "path": "dont/exist",
+            "user": "dont",
             "name": "exist",
-            "private": True,
-            "visibility": "internal"
+            "default": "wtfdude",
+            "base": "wtfdude"
         })
 
-        # users doesn't exist, create
+        self.github.request.assert_has_calls([
+            unittest.mock.call("POST", "user/repos", json={
+                "name": "exist",
+                "private": True
+            })
+        ])
 
-        self.assertEqual(self.github.repo("doesnt"), {
-            "full_name": "me/doesnt",
-            "name": "doesnt",
-            "private": True,
-            "base_branch": "notracist",
-            "url": "sure"
+        # default branch doesn't exist
+
+        self.github.data = {
+            "path": "does/exist",
+            "org": "does",
+            "name": "exist",
+            "title": "heavyweight"
+        }
+
+        self.github.request = unittest.mock.MagicMock(return_value=[])
+
+        self.github.repo()
+
+        self.assertEqual(self.github.data, {
+            "path": "does/exist",
+            "org": "does",
+            "name": "exist",
+            "title": "heavyweight",
+            "default": "maine",
+            "base": "maine"
         })
 
-        self.github.api.request.assert_called_with("POST", "https://api.github.com/user/repos", params=None, json={
-            "full_name": "me/doesnt",
-            "name": "doesnt",
-            "private": True
-        })
+        self.github.request.assert_has_calls([
+            unittest.mock.call("PUT", "repos/does/exist/contents/CNC", json={
+                "message": "Created by CnC Forge - heavyweight",
+                "content": base64.b64encode("Created by CnC Forge - heavyweight".encode('utf-8')).decode('utf-8')
+            })
+        ])
 
     def test_hook(self):
 
-        repo = {
-            "full_name": "my/stuff"
+        self.github.data = {
+            "path": "my/stuff",
+            "hook": [
+                {"url": "here"},
+                {"url": "there"}
+            ]
         }
 
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
             "config": {"url": "here"}
         }])
 
-        # exists
+        self.github.request = unittest.mock.MagicMock()
 
-        self.assertEqual(self.github.hook(repo, "here"), [
-            {"url": "here"}
-        ])
+        self.github.hook()
 
-        self.github.iterate.assert_called_once_with("repos/my/stuff/hooks")
-
-        self.github.api.request.assert_not_called()
-
-        # doesn't exist
-
-        self.assertEqual(self.github.hook(repo, [{"url": "there"}]), [
-            {"url": "there"}
-        ])
-
-        self.github.api.request.assert_called_with("POST", "https://api.github.com/repos/my/stuff/hooks", params=None, json={
+        self.github.request.assert_called_with("POST", "repos/my/stuff/hooks", json={
             "config": {"url": "there"}
+        })
+
+    @unittest.mock.patch("builtins.print")
+    def test_branch(self, mock_print):
+
+        self.github.data = {
+            "path": "my/stuff"
+        }
+
+        self.github.iterate = unittest.mock.MagicMock(return_value=[{
+            "name": "exists"
+        }])
+
+        self.github.request = unittest.mock.MagicMock(return_value={
+            "object": {
+                "sha": "right"
+            }
+        })
+
+        self.github.branch("exists", "drum")
+
+        self.github.request.assert_not_called()
+
+        self.github.branch("notexists", "drum")
+
+        self.github.request.assert_called_with("POST", "repos/my/stuff/git/refs", json={
+            "ref": f"refs/heads/notexists",
+            "sha": "right"
+        })
+
+        mock_print.assert_called_once_with({
+            "ref": f"refs/heads/notexists",
+            "sha": "right"
         })
 
     @unittest.mock.patch("builtins.print")
     def test_pull_request(self, mock_print):
 
-        repo = {
-            "full_name": "my/stuff",
-            "base_branch": "maine"
+        self.github.data = {
+            "path": "my/stuff",
+            "branch": "exists"
         }
 
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
@@ -164,182 +282,52 @@ class TestGitHub(unittest.TestCase):
             "html_url": "ya"
         }])
 
-        github = {
-            "repo": repo,
-            "branch": "exists"
-        }
+        self.github.request = unittest.mock.MagicMock(return_value={
+            "html_url": "sure"
+        })
 
         # exists
 
-        self.assertEqual(self.github.pull_request(github, "exists"), {
-            "title": "exists",
+        self.github.pull_request()
+
+        self.assertEqual(self.github.data, {
+            "path": "my/stuff",
+            "branch": "exists",
             "url": "ya"
         })
 
-        self.github.iterate.assert_called_once_with("repos/my/stuff/pulls")
-
-        mock_print.assert_not_called()
+        self.github.request.assert_not_called()
 
         # doesn't exist
 
-        self.github.api.request.return_value.json.return_value = {"html_url": "sure"}
-
-        github = {
-            "repo": repo,
-            "branch": "doesnt"
+        self.github.data = {
+            "path": "my/stuff",
+            "branch": "doesntexist",
+            "title": "heavyweight",
+            "base": "drum"
         }
 
-        self.assertEqual(self.github.pull_request(github, {"body": "rock"}), {
-            "title": "doesnt",
-            "body": "rock",
+        self.github.pull_request()
+
+        self.assertEqual(self.github.data, {
+            "path": "my/stuff",
+            "branch": "doesntexist",
+            "title": "heavyweight",
+            "base": "drum",
             "url": "sure"
         })
 
+        self.github.request.assert_called_with("POST", "repos/my/stuff/pulls", json={
+            "head": "doesntexist",
+            "base": "drum",
+            "title": "heavyweight"
+        })
+
         mock_print.assert_called_once_with({
-            "head": "doesnt",
-            "base": "maine",
-            "title": "doesnt",
-            "body": "rock"
+            "head": "doesntexist",
+            "base": "drum",
+            "title": "heavyweight"
         })
-
-        self.github.api.request.assert_has_calls([
-            unittest.mock.call("POST", "https://api.github.com/repos/my/stuff/pulls", params=None, json={
-                "head": "doesnt",
-                "base": "maine",
-                "title": "doesnt",
-                "body": "rock"
-            }),
-            unittest.mock.call().raise_for_status(),
-            unittest.mock.call().json()
-        ])
-
-    @unittest.mock.patch("os.chdir")
-    @unittest.mock.patch("shutil.rmtree")
-    @unittest.mock.patch("os.makedirs")
-    @unittest.mock.patch("builtins.print")
-    @unittest.mock.patch("subprocess.check_output")
-    def test_clone(self, mock_subprocess, mock_print, mock_makedirs, mock_rmtree, mock_chdir):
-
-        def iterate(url):
-
-            if url == "user/repos":
-                return [{
-                    "full_name": "my/stuff",
-                    "default_branch": "maine",
-                    "html_url": "ya"
-                }]
-            elif url == "repos/my/stuff/hooks":
-                return [{
-                    "config": {"url": "here"}
-                }]
-            elif url == "repos/my/stuff/branches":
-                return [{
-                    "name": "sweat"
-                }]
-
-        self.github.iterate = iterate
-
-        git_branch = b"maine"
-
-        def subprocess(command, shell):
-
-            if command.startswith("git clone"):
-                return "cloned"
-            elif command.startswith("git branch"):
-                return git_branch
-            elif command.startswith("git checkout"):
-                return "checked out"
-
-        mock_subprocess.side_effect = subprocess
-
-        cnc = unittest.mock.MagicMock()
-
-        cnc.data = {"id": "sweat", "test": True}
-        cnc.base.return_value = "noise"
-
-        # test
-
-        github = {
-            "repo": "test/stuff"
-        }
-
-        self.github.clone(cnc, github)
-
-        mock_chdir.assert_has_calls([
-            unittest.mock.call("noise")
-        ])
-        mock_rmtree.assert_called_once_with("noise/destination", ignore_errors=True)
-        mock_makedirs.assert_called_once_with("noise/destination")
-
-        # default branch
-
-        github = {
-            "repo": "my/stuff",
-            "branch": "maine",
-            "hook": "here"
-        }
-
-        self.github.clone(cnc, github)
-
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "ya"
-            },
-            "hook": [{
-                "url": "here"
-            }],
-            "branch": "maine"
-        })
-
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
-            unittest.mock.call("git branch --all", shell=True),
-            unittest.mock.call("git checkout maine", shell=True)
-        ])
-        mock_print.assert_has_calls([
-            unittest.mock.call("cloned"),
-            unittest.mock.call("checked out")
-        ])
-
-        # new branch
-
-        github = {
-            "repo": {
-                "full_name": "my/stuff"
-            },
-            "prefix": "YOLO-420",
-            "hook": "here",
-            "base": "mainer"
-        }
-
-        self.github.clone(cnc, github)
-
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "url": "ya",
-                "base_branch": "maine"
-            },
-            "hook": [{
-                "url": "here"
-            }],
-            "prefix": "YOLO-420",
-            "branch": "YOLO-420-sweat",
-            "base": "mainer",
-            "upstream": True
-        })
-
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
-            unittest.mock.call("git branch | grep '*'", shell=True),
-            unittest.mock.call("git checkout mainer", shell=True),
-            unittest.mock.call("git branch --all", shell=True),
-            unittest.mock.call("git checkout -b YOLO-420-sweat", shell=True)
-        ])
 
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("shutil.rmtree")
@@ -347,51 +335,20 @@ class TestGitHub(unittest.TestCase):
     @unittest.mock.patch("subprocess.check_output")
     def test_change(self, mock_subprocess, mock_print, mock_rmtree, mock_chdir):
 
-        def iterate(url):
+        mock_subprocess.side_effect = ["cloned", "checked out"]
 
-            if url == "user/repos":
-                return [{
-                    "full_name": "my/stuff",
-                    "default_branch": "maine",
-                    "html_url": "ya"
-                }]
+        self.github.cnc = unittest.mock.MagicMock()
+        self.github.cnc.data = {}
+        self.github.cnc.base.return_value = "noise"
 
-        self.github.iterate = iterate
-
-        def subprocess(command, shell):
-
-            if command.startswith("git clone"):
-                return "cloned"
-            elif command.startswith("git checkout"):
-                return "checked out"
-
-        mock_subprocess.side_effect = subprocess
-
-        # different branch
-
-        cnc = unittest.mock.MagicMock()
-        cnc.data = {}
-        cnc.base.return_value = "noise"
-
-        github = {
-            "repo": "my/stuff",
+        self.github.data = {
+            "path": "my/stuff",
             "branch": "ayup"
         }
 
-        self.github.change(cnc, github)
+        self.github.change()
 
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "ya"
-            },
-            "branch": "ayup"
-        })
-
-        self.assertEqual(cnc.data["change"], github)
+        self.assertEqual(self.github.cnc.data["change"], self.github.data)
 
         mock_chdir.assert_has_calls([
             unittest.mock.call("noise"),
@@ -411,53 +368,90 @@ class TestGitHub(unittest.TestCase):
 
         mock_chdir.reset_mock()
 
-        self.github.change(cnc, github)
+        self.github.change()
 
         mock_chdir.assert_not_called()
 
-        # create
+    @unittest.mock.patch("os.chdir")
+    @unittest.mock.patch("shutil.rmtree")
+    @unittest.mock.patch("os.makedirs")
+    @unittest.mock.patch("builtins.print")
+    @unittest.mock.patch("subprocess.check_output")
+    def test_code(self, mock_subprocess, mock_print, mock_makedirs, mock_rmtree, mock_chdir):
 
-        mock_chdir.reset_mock()
-        mock_rmtree.reset_mock()
-        mock_subprocess.reset_mock()
-        mock_print.reset_mock()
+        self.github.cnc = unittest.mock.MagicMock()
+        self.github.repo = unittest.mock.MagicMock()
+        self.github.hook = unittest.mock.MagicMock()
+        self.github.branch = unittest.mock.MagicMock()
 
-        cnc = unittest.mock.MagicMock()
-        cnc.data = {}
-        cnc.base.return_value = "noise"
+        self.github.cnc.data = {"id": "sweat", "test": True}
+        self.github.cnc.base.return_value = "noise"
 
-        github = {
-            "repo": "my/stuff",
-            "create": True
+        self.github.data = {
+            "path": "my/stuff",
+            "prefix": "mr",
+            "default": "def",
+            "base": "drum"
         }
 
-        self.github.change(cnc, github)
+        mock_subprocess.side_effect = ["cloned", "checked out"]
 
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "ya"
-            },
-            "create": True,
-            "branch": "maine"
-        })
+        # test
 
-        self.assertEqual(cnc.data["change"], github)
+        self.github.code()
 
         mock_chdir.assert_has_calls([
             unittest.mock.call("noise")
         ])
-        mock_rmtree.assert_called_once_with("noise/source", ignore_errors=True)
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("git clone git@github.com:my/stuff.git source", shell=True)
-        ])
-        mock_print.assert_has_calls([
-            unittest.mock.call("cloned")
+        mock_rmtree.assert_called_once_with("noise/destination", ignore_errors=True)
+        mock_makedirs.assert_called_once_with("noise/destination")
+
+        self.assertEqual(self.github.data, {
+            "path": "my/stuff",
+            "prefix": "mr",
+            "default": "def",
+            "base": "drum"
+        })
+
+        self.github.repo.assert_not_called()
+        self.github.hook.assert_not_called()
+        self.github.branch.assert_not_called()
+
+        # commit
+
+        self.github.cnc.data["test"] = False
+
+        self.github.code()
+
+        self.assertEqual(self.github.data, {
+            "path": "my/stuff",
+            "prefix": "mr",
+            "default": "def",
+            "base": "drum",
+            "branch": "mr-sweat",
+            "title": "mr-sweat"
+        })
+
+        self.github.repo.assert_called_once_with()
+        self.github.hook.assert_called_once_with()
+        self.github.branch.assert_has_calls([
+            unittest.mock.call("drum", "def"),
+            unittest.mock.call("mr-sweat", "drum"),
         ])
 
+        mock_subprocess.assert_has_calls([
+            unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
+            unittest.mock.call("git checkout mr-sweat", shell=True)
+        ])
+        mock_print.assert_has_calls([
+            unittest.mock.call("cloned"),
+            unittest.mock.call("checked out")
+        ])
+
+        mock_chdir.assert_has_calls([
+            unittest.mock.call("noise"),
+            unittest.mock.call("noise/destination")
+        ])
 
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("os.path.exists")
@@ -466,21 +460,20 @@ class TestGitHub(unittest.TestCase):
     @unittest.mock.patch("subprocess.check_output")
     def test_commit(self, mock_subprocess, mock_print, mock_rename, mock_exists, mock_chdir):
 
+        self.github.data = {"url": "sure"}
+
+        self.github.cnc = unittest.mock.MagicMock()
+        self.github.link = unittest.mock.MagicMock()
+        self.github.pull_request = unittest.mock.MagicMock()
+
+        self.github.cnc.data = {"id": "sweat", "test": True}
+        self.github.cnc.base.return_value = "noise"
+
         def exists(path):
 
             return path.endswith("code-0")
 
         mock_exists.side_effect = exists
-
-        def iterate(url):
-
-            if url == "repos/my/stuff/pulls":
-                return [{
-                    "head": {"ref": "ayup"},
-                    "html_url": "sure"
-                }]
-
-        self.github.iterate = iterate
 
         git_status = b"Changes to be committed"
 
@@ -497,14 +490,9 @@ class TestGitHub(unittest.TestCase):
 
         mock_subprocess.side_effect = subprocess
 
-        cnc = unittest.mock.MagicMock()
-
-        cnc.data = {"id": "sweat", "test": True}
-        cnc.base.return_value = "noise"
-
         # test
 
-        self.github.commit(cnc, {})
+        self.github.commit()
 
         mock_chdir.assert_has_calls([
             unittest.mock.call("noise/destination")
@@ -513,112 +501,24 @@ class TestGitHub(unittest.TestCase):
             "noise/destination",
             "noise/code-1"
         )
+        mock_subprocess.assert_not_called()
 
-        # new
+        # commit
 
-        cnc.data["test"] = False
+        self.github.cnc.data["test"] = False
 
-        github = {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine"
-            },
-            "branch": "ayup",
-            "upstream": True
-        }
+        self.github.commit()
 
-        self.github.commit(cnc, github)
-
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine"
-            },
-            "branch": "ayup",
-            "upstream": True,
-            "pull_request": {
-                "title": "ayup",
-                "url": "sure"
-            }
-        })
-
-        cnc.link.assert_called_once_with("sure")
+        self.github.cnc.link.assert_called_once_with("sure")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),
             unittest.mock.call("git status", shell=True),
             unittest.mock.call("git commit -am 'sweat'", shell=True),
-            unittest.mock.call("git push --set-upstream origin ayup", shell=True)
+            unittest.mock.call("git push origin", shell=True)
         ])
         mock_print.assert_has_calls([
             unittest.mock.call("added"),
             unittest.mock.call("committed"),
             unittest.mock.call("pushed")
-        ])
-
-        # old
-
-        github = {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "ya"
-            },
-            "prefix": "YOLO-420",
-            "branch": "maine"
-        }
-
-        self.github.commit(cnc, github)
-
-        self.assertEqual(github, {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "ya"
-            },
-            "prefix": "YOLO-420",
-            "branch": "maine"
-        })
-
-        cnc.link.assert_called_with("ya")
-
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("git add .", shell=True),
-            unittest.mock.call("git status", shell=True),
-            unittest.mock.call("git commit -am 'YOLO-420: sweat'", shell=True),
-            unittest.mock.call("git push origin", shell=True)
-        ])
-
-        # no changes
-
-        mock_subprocess.reset_mock()
-
-        git_status = b"All good"
-
-        github = {
-            "repo": {
-                "full_name": "my/stuff",
-                "org": "my",
-                "name": "stuff",
-                "base_branch": "maine",
-                "url": "fine"
-            },
-            "branch": "maine"
-        }
-
-        self.github.commit(cnc, github)
-
-        cnc.link.assert_called_with("fine")
-
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("git add .", shell=True),
-            unittest.mock.call("git status", shell=True)
         ])
