@@ -6,12 +6,12 @@ import os
 import json
 import time
 import traceback
-import subprocess
 
 import redis
 import jinja2
 
 import cnc
+import github
 
 class Daemon:
     """
@@ -22,17 +22,9 @@ class Daemon:
 
         self.sleep = int(os.environ['SLEEP'])
 
-        with open("/opt/service/secret/redis.json", "r") as redis_file:
-            self.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.load(redis_file))
+        self.redis = redis.Redis(host="redis.cnc-forge", charset="utf-8", decode_responses=True)
 
-        with open("/opt/service/secret/github.json", "r") as github_file:
-            self.github = json.load(github_file)
-
-        subprocess.check_output("mkdir -p /root/.ssh", shell=True)
-        subprocess.check_output("cp /opt/service/secret/github.key /root/.ssh/", shell=True)
-        subprocess.check_output("chmod 600 /root/.ssh/github.key", shell=True)
-        subprocess.check_output("cp /opt/service/secret/.sshconfig /root/.ssh/config", shell=True)
-        subprocess.check_output("cp /opt/service/secret/.gitconfig /root/.gitconfig", shell=True)
+        github.GitHub.config()
 
         self.env = jinja2.Environment(keep_trailing_newline=True)
 

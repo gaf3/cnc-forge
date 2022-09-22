@@ -10,37 +10,105 @@ class TestGitHub(unittest.TestCase):
 
     maxDiff = None
 
+    @unittest.mock.patch.dict(github.GitHub.creds, {
+        "default": {
+            "user": "arcade",
+            "token": "fire",
+            "host": "most",
+            "url":  "curl"
+        }
+    })
     def setUp(self):
 
-        self.github = github.GitHub("me", {"user": "arcade", "token": "fire"}, {"repo": "git.com"})
+        self.github = github.GitHub("me", {"repo": "git.com"})
         self.github.api = unittest.mock.MagicMock()
 
+    @unittest.mock.patch.dict(github.GitHub.creds, {
+        "people": {
+            "host": "stuff",
+            "user": "things"
+        }
+    })
+    @unittest.mock.patch('github.open', create=True)
+    @unittest.mock.patch("github.subprocess.check_output")
+    def test_ssh(self, mock_subprocess, mock_open):
+
+        github.GitHub.ssh("people")
+
+        mock_open.assert_called_once_with("/root/.ssh/config", "a")
+        mock_open.return_value.__enter__().write.assert_has_calls([
+            unittest.mock.call("Host stuff\n"),
+            unittest.mock.call("    User things\n"),
+            unittest.mock.call("    IdentityFile /root/.ssh/github_people.key\n"),
+            unittest.mock.call("    StrictHostKeyChecking no\n"),
+            unittest.mock.call("    IdentitiesOnly yes\n")
+        ])
+
+        mock_subprocess.assert_has_calls([
+            unittest.mock.call("cp /opt/service/secret/github_people.key /root/.ssh/", shell=True),
+            unittest.mock.call("chmod 600 /root/.ssh/github_people.key", shell=True)
+        ])
+
+    @unittest.mock.patch.dict(github.GitHub.creds, {})
+    @unittest.mock.patch("glob.glob")
+    @unittest.mock.patch('github.open', create=True)
+    @unittest.mock.patch('github.GitHub.ssh')
+    def test_config(self, mock_ssh, mock_open, mock_glob):
+
+        mock_glob.return_value = ["what/github_people.json"]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{"stuff": "things"}').return_value
+        ]
+
+        github.GitHub.config()
+
+        self.assertEqual(github.GitHub.creds, {
+            "people": {
+                "stuff": "things",
+                "url": "https://api.github.com",
+                "host": "github.com"
+            }
+        })
+
+        mock_ssh.assert_called_once_with("people")
+
+    @unittest.mock.patch.dict(github.GitHub.creds, {
+        "default": {
+            "user": "arcade",
+            "token": "fire",
+            "host": "most",
+            "url":  "curl"
+        }
+    })
     def test___init__(self):
 
-        init = github.GitHub("me", {"user": "arcade", "token": "fire"}, {"repo": "git.com"})
+        init = github.GitHub("me", {"repo": "git.com"})
 
         self.assertEqual(init.cnc, "me")
         self.assertEqual(init.user, "arcade")
+        self.assertEqual(init.host, "most")
+        self.assertEqual(init.url, "curl")
         self.assertIsInstance(init.api, requests.Session)
         self.assertEqual(init.api.auth, ("arcade", "fire"))
         self.assertEqual(init.data, {
+            "creds": "default",
             "repo": "git.com",
             "name": "git.com",
             "user": "arcade",
-            "api": "https://api.github.com",
             "path": "arcade/git.com"
         })
 
-        init = github.GitHub("me", {"user": "arcade", "token": "fire"}, {
+        init = github.GitHub("me", {
             "repo": "anization/git.com",
             "hook": "captain"
         })
 
         self.assertEqual(init.data, {
+            "creds": "default",
             "repo": "anization/git.com",
             "org": "anization",
             "name": "git.com",
-            "api": "https://api.github.com",
             "path": "anization/git.com",
             "hook": [
                 {
@@ -55,7 +123,7 @@ class TestGitHub(unittest.TestCase):
 
         self.assertEqual(self.github.request("GET", "some", {"b": 2}, {"c": 3}), {"a": 1})
 
-        self.github.api.request.assert_called_once_with("GET", "https://api.github.com/some", params={"b": 2}, json={"c": 3})
+        self.github.api.request.assert_called_once_with("GET", "curl/some", params={"b": 2}, json={"c": 3})
 
         self.github.api.request.return_value.raise_for_status.assert_called_once_with()
 
@@ -67,7 +135,7 @@ class TestGitHub(unittest.TestCase):
 
         self.assertEqual(list(self.github.iterate("none")), [])
 
-        self.github.api.request.assert_called_once_with("GET", "https://api.github.com/none", params={"page": 1}, json=None)
+        self.github.api.request.assert_called_once_with("GET", "curl/none", params={"page": 1}, json=None)
 
         # some
 
@@ -82,8 +150,8 @@ class TestGitHub(unittest.TestCase):
         self.assertEqual(list(self.github.iterate("some", {"b": 2}, {"c": 3})), [{"a": 1}])
 
         self.github.api.request.assert_has_calls([
-            unittest.mock.call("GET", "https://api.github.com/some", params={"b": 2, "page": 1}, json={"c": 3}),
-            unittest.mock.call("GET", "https://api.github.com/some", params={"b": 2, "page": 2}, json={"c": 3})
+            unittest.mock.call("GET", "curl/some", params={"b": 2, "page": 1}, json={"c": 3}),
+            unittest.mock.call("GET", "curl/some", params={"b": 2, "page": 2}, json={"c": 3})
         ])
 
     def test_repo(self):
@@ -356,7 +424,7 @@ class TestGitHub(unittest.TestCase):
         ])
         mock_rmtree.assert_called_once_with("noise/source", ignore_errors=True)
         mock_subprocess.assert_has_calls([
-            unittest.mock.call("git clone git@github.com:my/stuff.git source", shell=True),
+            unittest.mock.call("git clone git@most:my/stuff.git source", shell=True),
             unittest.mock.call("git checkout ayup", shell=True)
         ])
         mock_print.assert_has_calls([
@@ -440,7 +508,7 @@ class TestGitHub(unittest.TestCase):
         ])
 
         mock_subprocess.assert_has_calls([
-            unittest.mock.call("git clone git@github.com:my/stuff.git destination", shell=True),
+            unittest.mock.call("git clone git@most:my/stuff.git destination", shell=True),
             unittest.mock.call("git checkout mr-sweat", shell=True)
         ])
         mock_print.assert_has_calls([
