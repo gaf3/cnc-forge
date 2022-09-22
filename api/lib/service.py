@@ -49,8 +49,7 @@ def build():
     app = flask.Flask("cnc-forge-api")
     app.api = flask_restful.Api(app)
 
-    with open("/opt/service/secret/redis.json", "r") as redis_file:
-        app.redis = redis.Redis(charset="utf-8", decode_responses=True, **json.loads(redis_file.read()))
+    app.redis = redis.Redis(host="redis.cnc-forge", charset="utf-8", decode_responses=True)
 
     app.api.add_resource(Health, '/health')
     app.api.add_resource(Forge, '/forge', '/forge/<id>')

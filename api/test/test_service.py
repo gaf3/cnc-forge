@@ -63,13 +63,8 @@ class TestRestful(unittest.TestCase):
 
     maxDiff = None
 
-    @unittest.mock.patch('service.open', create=True)
     @unittest.mock.patch("redis.Redis", MockRedis)
-    def setUp(self, mock_open):
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"host": "redi.com"}').return_value
-        ]
+    def setUp(self):
 
         self.app = service.build()
         self.api = self.app.test_client()
@@ -126,25 +121,15 @@ class TestRestful(unittest.TestCase):
 
 class TestAPI(TestRestful):
 
-    @unittest.mock.patch('service.open', create=True)
     @unittest.mock.patch("redis.Redis", MockRedis)
-    def test_build(self, mock_open):
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"host": "redi.com"}').return_value
-        ]
+    def test_build(self):
 
         app = service.build()
 
         self.assertEqual(app.name, "cnc-forge-api")
-        self.assertEqual(app.redis.host, "redi.com")
+        self.assertEqual(app.redis.host, "redis.cnc-forge")
         self.assertEqual(app.redis.charset, "utf-8")
         self.assertTrue(app.redis.decode_responses)
-
-        mock_open.assert_has_calls([
-            unittest.mock.call("/opt/service/secret/redis.json", "r")
-        ])
-
 
 class TestHealth(TestRestful):
 

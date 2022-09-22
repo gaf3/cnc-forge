@@ -407,7 +407,7 @@ class CnC:
 
         if "github" in change:
             change["github"] = self.transform(change["github"], values)
-            controller = github.GitHub(self, self.daemon.github, change["github"])
+            controller = github.GitHub(self, change["github"])
 
         controller.change()
 
@@ -427,7 +427,7 @@ class CnC:
 
         if "github" in code:
             code["github"] = self.transform(code["github"], values)
-            controller = github.GitHub(self, self.daemon.github, code["github"])
+            controller = github.GitHub(self, code["github"])
 
         controller.code()
 

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: daemon
-        image: docker.io/gaf3/cnc-forge-daemon:0.3.0
+        image: docker.io/gaf3/cnc-forge-daemon:0.3.1
         imagePullPolicy: Always
         env:
         - name: SLEEP

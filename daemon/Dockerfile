@@ -1,6 +1,10 @@
 FROM python:3.8.5-alpine3.12
 
-RUN mkdir -p /opt/service
+COPY .gitconfig /root/
+
+RUN mkdir -p /root/.ssh/ && \
+	touch /root/.ssh/config && \
+	mkdir -p /opt/service
 
 WORKDIR /opt/service
 

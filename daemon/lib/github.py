@@ -2,7 +2,11 @@
 Module for interacting with GitHub
 """
 
+# pylint: disable=redefined-outer-name
+
 import os
+import glob
+import json
 import shutil
 import base64
 import requests
@@ -12,8 +16,16 @@ import subprocess
 class GitHub:
     """
     Class for interacting with GitHub
+
+    creds format:
+        github_(name).key - SSH key
+        github_(name).json
+            url: The URL to use with the API (optional)
+            host: Host to use with checkout (optional)
+            user:
+            token:
     data fields:
-        api: API to use set by the user
+        creds: Name of creds to use (default is default)
         repo: repo from settings
         name: name of the repo
         org: IF there's an org to do
@@ -28,17 +40,57 @@ class GitHub:
         url: The pull equest url
     """
 
+    creds = {}
+
+    @classmethod
+    def ssh(cls, name):
+        """
+        Sets up ssh for creds
+        """
+
+        with open("/root/.ssh/config", "a") as ssh_file:
+            ssh_file.write(f"Host {cls.creds[name]['host']}\n")
+            ssh_file.write(f"    User {cls.creds[name]['user']}\n")
+            ssh_file.write(f"    IdentityFile /root/.ssh/github_{name}.key\n")
+            ssh_file.write("    StrictHostKeyChecking no\n")
+            ssh_file.write("    IdentitiesOnly yes\n")
+
+        subprocess.check_output(f"cp /opt/service/secret/github_{name}.key /root/.ssh/", shell=True)
+        subprocess.check_output(f"chmod 600 /root/.ssh/github_{name}.key", shell=True)
+
+    @classmethod
+    def config(cls):
+        """
+        Sets up a keys and such.
+        """
+
+        for creds in glob.glob("/opt/service/secret/github_*.json"):
+
+            name = creds.split("/github_")[-1].split(".")[0]
+
+            with open(creds, "r") as creds_file:
+                cls.creds[name] = json.load(creds_file)
+                cls.creds[name].setdefault("url", "https://api.github.com")
+                cls.creds[name].setdefault("host", "github.com")
+
+            cls.ssh(name)
+
     data = None
 
-    def __init__(self, cnc, creds, data):
+    def __init__(self, cnc, data):
 
         self.cnc = cnc
-        self.user = creds['user']
-        self.api = requests.Session()
-        self.api.auth = (self.user, creds['token'])
         self.data = data
 
-        self.data.setdefault("api", "https://api.github.com")
+        self.data.setdefault("creds", "default")
+
+        creds = self.creds[self.data["creds"]]
+
+        self.user = creds['user']
+        self.host = creds["host"]
+        self.url = creds["url"]
+        self.api = requests.Session()
+        self.api.auth = (self.user, creds['token'])
 
         if isinstance(self.data["repo"], str):
 
@@ -65,7 +117,7 @@ class GitHub:
         Performs a request and return the JSON
         """
 
-        response = self.api.request(method, f"{self.data['api']}/{path}", params=params, json=json)
+        response = self.api.request(method, f"{self.url}/{path}", params=params, json=json)
 
         response.raise_for_status()
 
@@ -206,7 +258,7 @@ class GitHub:
 
         shutil.rmtree(source, ignore_errors=True)
 
-        print(subprocess.check_output(f"git clone git@github.com:{self.data['path']}.git source", shell=True))
+        print(subprocess.check_output(f"git clone git@{self.host}:{self.data['path']}.git source", shell=True))
 
         if "branch" in self.data:
             os.chdir(source)
@@ -249,7 +301,7 @@ class GitHub:
         self.branch(self.data["base"], self.data['default'])
         self.branch(self.data["branch"], self.data['base'])
 
-        print(subprocess.check_output(f"git clone git@github.com:{self.data['path']}.git destination", shell=True))
+        print(subprocess.check_output(f"git clone git@{self.host}:{self.data['path']}.git destination", shell=True))
 
         os.chdir(destination)
 

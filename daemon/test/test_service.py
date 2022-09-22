@@ -39,62 +39,33 @@ class MockRedis:
             if fnmatch.fnmatch(key, pattern):
                 yield key
 
-
-class MockGitHub:
-
-    def __init__(self, host, **kwargs):
-
-        self.host = host
-
-
 class TestService(unittest.TestCase):
 
     @unittest.mock.patch.dict(os.environ, {
         "SLEEP": "7"
     })
-    @unittest.mock.patch('service.open', create=True)
-    @unittest.mock.patch("service.subprocess.check_output", unittest.mock.MagicMock)
     @unittest.mock.patch("redis.Redis", MockRedis)
-    @unittest.mock.patch("github.GitHub", MockGitHub)
-    def setUp(self, mock_open):
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"host": "redi.com"}').return_value,
-            unittest.mock.mock_open(read_data='{"host": "git.com"}').return_value
-        ]
+    @unittest.mock.patch("github.GitHub.config", unittest.mock.MagicMock)
+    def setUp(self):
 
         self.daemon = service.Daemon()
 
     @unittest.mock.patch.dict(os.environ, {
         "SLEEP": "7"
     })
-    @unittest.mock.patch('service.open', create=True)
-    @unittest.mock.patch("service.subprocess.check_output")
-    @unittest.mock.patch("redis.Redis", MockRedis)
-    @unittest.mock.patch("github.GitHub", MockGitHub)
-    def test___init___(self, mock_subprocess, mock_open):
 
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"host": "redi.com"}').return_value,
-            unittest.mock.mock_open(read_data='{"host": "git.com"}').return_value
-        ]
+    @unittest.mock.patch("redis.Redis", MockRedis)
+    @unittest.mock.patch("github.GitHub.config")
+    def test___init___(self, mock_github):
 
         daemon = service.Daemon()
 
         self.assertEqual(daemon.sleep, 7)
 
-        self.assertEqual(daemon.redis.host, "redi.com")
-        self.assertEqual(daemon.github['host'], "git.com")
-
-        mock_subprocess.assert_has_calls([
-            unittest.mock.call("mkdir -p /root/.ssh", shell=True),
-            unittest.mock.call("cp /opt/service/secret/github.key /root/.ssh/", shell=True),
-            unittest.mock.call("chmod 600 /root/.ssh/github.key", shell=True),
-            unittest.mock.call("cp /opt/service/secret/.sshconfig /root/.ssh/config", shell=True),
-            unittest.mock.call("cp /opt/service/secret/.gitconfig /root/.gitconfig", shell=True)
-        ])
-
+        self.assertEqual(daemon.redis.host, "redis.cnc-forge")
         self.assertTrue(daemon.env.keep_trailing_newline)
+
+        mock_github.assert_called_once_with()
 
     @unittest.mock.patch("cnc.CnC.process")
     @unittest.mock.patch("traceback.format_exc")
