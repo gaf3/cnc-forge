@@ -386,7 +386,13 @@ class CnC:
         if content["source"] == "/":
             sources = [""]
         else:
-            sources = [self.relative(source) for source in glob.glob(self.source(content, path=True))]
+
+            path = self.source(content, path=True)
+
+            if '*' in path or os.path.isdir(path):
+                sources = [self.relative(source) for source in glob.glob(path)]
+            else:
+                sources = [self.relative(path)]
 
         # Go through the source as glob, transforming destination accordingly, assuming source if missing
 

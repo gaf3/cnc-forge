@@ -573,12 +573,14 @@ class TestCnC(unittest.TestCase):
 
         self.assertEqual(self.cnc.data["content"], content)
 
+    @unittest.mock.patch("os.path.isdir")
     @unittest.mock.patch("glob.glob")
-    def test_content(self, mock_glob):
+    def test_content(self, mock_glob, mock_isdir):
 
         self.cnc.craft = unittest.mock.MagicMock()
 
         mock_glob.return_value = ["/opt/service/cnc/sweat/destination/a/b/c"]
+        mock_isdir.return_value = False
 
         # Root
 
@@ -597,7 +599,7 @@ class TestCnC(unittest.TestCase):
             "transform": []
         }, {})
 
-        # Minimal
+        # Glob
 
         content = {
             "source": "{{ start }}/*"
@@ -613,6 +615,27 @@ class TestCnC(unittest.TestCase):
             "preserve": [],
             "transform": []
         }, {"start": "a/b"})
+
+        # Dir
+
+        mock_isdir.return_value = True
+
+        content = {
+            "source": "{{ start }}/"
+        }
+
+        self.cnc.content(content, {"start": "a/b"})
+
+        self.cnc.craft.assert_called_with({
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, {"start": "a/b"})
+
+        mock_isdir.return_value = False
 
         # Converting
 
