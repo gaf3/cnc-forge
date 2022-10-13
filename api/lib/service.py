@@ -2,7 +2,7 @@
 Module for the service
 """
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,too-many-instance-attributes
 
 import os
 import time
@@ -41,6 +41,100 @@ RESERVED = [
     "cnc"
 ]
 
+class Options:
+    """
+    Class for retrieving options remotely
+    """
+
+    creds = {}
+
+    @classmethod
+    def config(cls):
+        """
+        Sets up creds
+        """
+
+        for creds in glob.glob("/opt/service/secret/options_*.json"):
+
+            name = creds.split("/options_")[-1].split(".")[0]
+
+            with open(creds, "r") as creds_file:
+                cls.creds[name] = json.load(creds_file)
+                cls.creds[name].setdefault("verify", True)
+
+    session = None
+    method = None
+    url = None
+    verify = None
+    path = None
+    params = None
+    body = None
+    results = None
+    option = None
+    title = None
+
+    def __init__(self, data):
+
+        self.session = requests.Session()
+
+        creds = copy.deepcopy(self.creds[data.get("creds", "default")])
+        creds.update(data)
+
+        creds.setdefault("method", "GET")
+        creds.setdefault("path", "")
+        creds.setdefault("headers", {})
+        creds.setdefault("params", {})
+        creds.setdefault("body", {})
+        creds.setdefault("results", "")
+        creds.setdefault("option", "")
+        creds.setdefault("title", "")
+
+        self.url = creds["url"]
+        self.verify = creds["verify"]
+
+        self.method = creds["method"]
+        self.path = creds["path"]
+        self.params = creds["params"]
+        self.body = creds["body"]
+        self.results = creds["results"]
+        self.option = creds["option"]
+        self.title = creds["title"]
+
+        if "username" in creds:
+            self.session.auth = (creds["username"], creds["password"])
+
+        if "token" in creds:
+            self.session.headers["Authorization"] = f"Bearer {creds['token']}"
+
+        if creds["headers"]:
+            self.session.headers.update(creds["headers"])
+
+    def retrieve(self, extra):
+        """
+        Retrieves the options and adds to extra
+        """
+
+        url = f"{self.url}/{self.path}" if self.path else self.url
+
+        results = self.session.request(self.method, url, verify=self.verify, params=self.params, json=self.body).json()
+
+        if self.results:
+            results = results[self.results]
+
+        extra["options"] = []
+
+        if self.title:
+            extra["titles"] = {}
+
+        for result in results:
+            if self.option:
+                extra["options"].append(result[self.option])
+                if self.title:
+                    extra["titles"][result[self.option]] = result[self.title]
+            else:
+                extra["options"].append(result)
+
+
 def build():
     """
     Builds the Flask App
@@ -54,6 +148,8 @@ def build():
     app.api.add_resource(Health, '/health')
     app.api.add_resource(Forge, '/forge', '/forge/<id>')
     app.api.add_resource(CnC, '/cnc', '/cnc/<id>')
+
+    Options.config()
 
     return app
 
@@ -208,28 +304,6 @@ class CnC(flask_restful.Resource):
 
         return True
 
-    def secret(self, secret, values):
-        """
-        Gets a secret for API
-        """
-
-        if isinstance(secret, str):
-
-            path = self.render(secret, values)
-            with open(f"/opt/service/secret/{path}", "r") as secret_file:
-                value = secret_file.read()
-            if path.split('.')[-1] in ['json', 'yml', 'yaml']:
-                value = yaml.safe_load(value)
-
-        else:
-
-            value = self.secret(secret["name"], values)
-
-            if "path" in secret:
-                value = self.render("{{%s}}" % self.render(secret["path"], values), value)
-
-        return value
-
     def render(self, template, values):
         """
         Gets a value of API
@@ -244,58 +318,12 @@ class CnC(flask_restful.Resource):
 
         if isinstance(template, dict):
 
-            if "secret" in template:
-                return self.secret(template["secret"], values)
-
             return {self.render(key, values): self.render(value, values) for key, value in template.items()}
 
         if isinstance(template, list):
             return [self.render(value, values) for value in template]
 
         return template
-
-    def api(self, api, values, extra):
-        """
-        Gets options for API
-        """
-
-        session = requests.Session()
-
-        uri = self.render(api["uri"], values)
-        verify = self.render(api.get("verify", True), values)
-        params = self.render(api.get("params", {}), values)
-        body = self.render(api.get("body", {}), values)
-
-        if "auth" in api:
-            auth = self.render(api["auth"], values)
-            session.auth = (auth["username"], auth["password"])
-
-        if "token" in api:
-            token = self.render(api["token"], values)
-            session.headers["Authorization"] = f"Bearer {token}"
-
-        session.headers.update(self.render(api.get("headers", {}), values))
-
-        results = session.get(uri, verify=verify, params=params, json=body).json()
-
-        if "options" in api:
-            results = results[self.render(api["options"], values)]
-
-        option = api.get("option")
-        title = api.get("title")
-
-        extra["options"] = []
-
-        if title is not None:
-            extra["titles"] = {}
-
-        for result in results:
-            if option is not None:
-                extra["options"].append(result[option])
-                if title is not None:
-                    extra["titles"][result[option]] = result[title]
-            else:
-                extra["options"].append(result)
 
     def field(self, fields, field):
         """
@@ -317,8 +345,8 @@ class CnC(flask_restful.Resource):
 
         extra = {}
 
-        if "api" in field:
-            self.api(field["api"], values, extra)
+        if isinstance(field.get("options"), dict):
+            Options(field["options"]).retrieve(extra)
 
         fields.update({**field, **extra})
 

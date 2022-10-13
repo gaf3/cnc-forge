@@ -1,4 +1,4 @@
-VERSION?=0.3.2
+VERSION?=0.3.3
 TILT_PORT=6738
 .PHONY: up down tag untag
 
