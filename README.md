@@ -79,45 +79,38 @@ output: # The Code and Changes to craft.
   iterate: # Iterate from a list variable into a new variable
 ```
 
-API lookup
+Options lookup
+
+You can lookup options in a field from API calls based on values previous fields.
+
+Create a file secret/options_yourservice.json:
+
+```json
+{
+    "url": "https://your.service.com", // the base url to use
+    "verify": true, // Whether to verify tls
+}
+```
 
 ```yaml
 - name: dynamic
-  description: JIRA ticket associated with the task
-  api:
+  description: Grab some values from elsewhere
+  options:
+    creds: yourservice # Matches the file secrets/options_yourservice.json
     uri: $ Url endpoint to hit
     verify: True # whether to do tls verify (default True)
-    auth: # Secrets separate
-      username: # What to use for basic auth
-        secret: # Name of secret to use
-      password: # What to use for basic auth
-        secret: # Name of secret to use
-    auth: # Secrets together
-      secret: # Name of secret to use (username and password fields)
-    token: # What to use for bearer token
-      secret: # Name of secret to use
+    method: POST # method to use (default GET)
+    path: resource # path to put on endof url
     headers: # Extra headers to send
       name: value
-      name:
-        secret: # Name of secret to use
     params: # What to put in the query string
       name: value
     body: # what to put in the JSON body
-    options: # Key in the return body that referances array, if blank will use whole body as array
+      name: value
+    results: # Key in the return body that referances array, if blank will use whole body as array
     option: # Key in each array element to use as option value
     title: # Key in each array element to use as title value (optional)
-
 ```
-
-Secret can also be
-
-```yaml
-secret:
-  name: # The name of the secret
-  path: # Path to the secret in dot/arrya format
-```
-
-Else it'll just grab the whole secret as the value
 
 Some experiental ideas
 
