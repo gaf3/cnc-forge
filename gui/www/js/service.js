@@ -79,6 +79,8 @@ DRApp.controller("Base",null,{
                 } else {
                     this.field_value(field, $("input[name='" + full_name+ "']:checked").val(), values);
                 }
+            } else if (field.bool) {
+                values[field.name] = $('#' + full_name).is(":checked");
             } else {
                 values[field.name] = $('#' + full_name).val();
             }
