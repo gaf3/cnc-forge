@@ -56,6 +56,18 @@
             {{= field.titles ? field.titles[option] : option}}<br/>
             {{~}}
         {{?}}
+    {{??field.bool}}
+        {{?readonly}}
+            {{= value ? 'true' : 'false' }}
+        {{??}}
+            <input
+                id="{{!full_name}}"
+                placeholder="{{!field.title || field.name}}"
+                {{?field.trigger}}OnClick="DRApp.current.controller.delay_change();"{{?}}
+                type="checkbox" {{?value}}checked{{?}}
+            />
+        {{?}}
+            <br/>
     {{??!field.fields}}
         {{?readonly}}
             {{= field.style == "datetime" ? (new Date(value*1000)).toLocaleString() : value}}
