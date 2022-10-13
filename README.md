@@ -6,7 +6,7 @@ Code and Changes Forge
 
 All output values are transformed as Jinja2 template using the values of inputs
 
-Current format:
+## Current format:
 
 ```yaml
 description: # Describes the Forge
@@ -36,7 +36,7 @@ output: # The Code and Changes to craft.
   condition: # Condition to satisfy
 ```
 
-Eventual format
+## Eventual format
 
 ```yaml
 description: # Describes the Forge
@@ -79,7 +79,7 @@ output: # The Code and Changes to craft.
   iterate: # Iterate from a list variable into a new variable
 ```
 
-Options lookup
+## Options lookup
 
 You can lookup options in a field from API calls based on values previous fields.
 
@@ -112,7 +112,11 @@ Create a file secret/options_yourservice.json:
     title: # Key in each array element to use as title value (optional)
 ```
 
-Some experiental ideas
+The values used are the creds fiel dict updated with the options block dict. So feel free to put whatever wherever.
+
+Just keep the secret values in the creds file.
+
+## Some experiental ideas
 
 ```
 iterate:
