@@ -59,6 +59,198 @@ class MockRedis:
             del self.expires[key]
 
 
+class TestOptions(unittest.TestCase):
+
+    maxDiff = None
+
+    @unittest.mock.patch.dict(service.Options.creds, {})
+    @unittest.mock.patch("glob.glob")
+    @unittest.mock.patch('service.open', create=True)
+    def test_config(self, mock_open, mock_glob):
+
+        mock_glob.return_value = ["what/options_people.json"]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{"stuff": "things"}').return_value
+        ]
+
+        service.Options.config()
+
+        self.assertEqual(service.Options.creds, {
+            "people": {
+                "stuff": "things",
+                "verify": True
+            }
+        })
+
+    @unittest.mock.patch.dict(service.Options.creds, {
+        "default": {
+            "url": "arcade",
+            "verify": True
+        }
+    })
+    def test___init__(self):
+
+            # defaults
+
+            options = service.Options({})
+
+            self.assertEqual(options.url, "arcade")
+            self.assertEqual(options.verify, True)
+            self.assertEqual(options.method, "GET")
+            self.assertEqual(options.path, "")
+            self.assertEqual(options.params, {})
+            self.assertEqual(options.body, {})
+            self.assertEqual(options.results, "")
+            self.assertEqual(options.option, "")
+            self.assertEqual(options.title, "")
+
+            # creds
+
+            service.Options.creds["credible"] = {
+                "url": "fire",
+                "verify": False,
+                "method": "POST",
+                "path": "long",
+                "headers": {
+                    "yes": "sah"
+                },
+                "params": {
+                    "hoo": "boy"
+                },
+                "body": {
+                    "gaw": "dam"
+                },
+                "results": "people",
+                "option": "stuff",
+                "title": "things"
+            }
+
+            data = {
+                "creds": "credible"
+            }
+
+            options = service.Options(data)
+
+            self.assertEqual(options.url, "fire")
+            self.assertEqual(options.verify, False)
+            self.assertEqual(options.method, "POST")
+            self.assertEqual(options.path, "long")
+            self.assertEqual(options.params, {"hoo": "boy"})
+            self.assertEqual(options.body, {"gaw": "dam"})
+            self.assertEqual(options.results, "people")
+            self.assertEqual(options.option, "stuff")
+            self.assertEqual(options.title, "things")
+
+            self.assertEqual(options.session.headers["yes"], "sah")
+
+            # data
+
+            data = {
+                "creds": "credible",
+                "url": "disco",
+                "username": "me",
+                "password": "sh",
+                "token": "ring"
+            }
+
+            options = service.Options(data)
+
+            self.assertEqual(options.url, "disco")
+            self.assertEqual(options.verify, False)
+            self.assertEqual(options.method, "POST")
+            self.assertEqual(options.path, "long")
+            self.assertEqual(options.params, {"hoo": "boy"})
+            self.assertEqual(options.body, {"gaw": "dam"})
+            self.assertEqual(options.results, "people")
+            self.assertEqual(options.option, "stuff")
+            self.assertEqual(options.title, "things")
+
+            self.assertEqual(options.session.headers["yes"], "sah")
+            self.assertEqual(options.session.auth, ("me", "sh"))
+            self.assertEqual(options.session.headers["Authorization"], "Bearer ring")
+
+    @unittest.mock.patch.dict(service.Options.creds, {
+        "default": {
+            "url": "arcade",
+            "verify": True
+        }
+    })
+    def test_retrieve(self):
+
+        options = service.Options({})
+
+        options.session = unittest.mock.MagicMock()
+
+        options.session.request.return_value.json.return_value = [1, 2, 3]
+
+        extra = {}
+
+        options.retrieve(extra)
+
+        self.assertEqual(extra, {
+            "options": [1, 2, 3]
+        })
+
+        options.session.request.assert_called_once_with(
+            "GET",
+            "arcade",
+            verify=True,
+            params={},
+            json={}
+        )
+
+        data = {
+            "path": "disco",
+            "params": {"a": 1},
+            "body": {"b": 2},
+            "results": "numbers",
+            "option": "id",
+            "title": "name"
+        }
+
+        options = service.Options(data)
+
+        options.session = unittest.mock.MagicMock()
+
+        options.session.request.return_value.json.return_value = {
+            "numbers": [
+                {
+                    "id": 1,
+                    "name": "one"
+                },
+                {
+                    "id": 2,
+                    "name": "two"
+                },
+                {
+                    "id": 3,
+                    "name": "three"
+                }
+            ]
+        }
+
+        extra = {}
+
+        options.retrieve(extra)
+
+        self.assertEqual(extra, {
+            "options": [1, 2, 3],
+            "titles": {
+                1: "one",
+                2: "two",
+                3: "three"
+            }
+        })
+
+        options.session.request.assert_called_with(
+            "GET",
+            "arcade/disco",
+            verify=True,
+            params={"a": 1},
+            json={"b": 2}
+        )
+
 class TestRestful(unittest.TestCase):
 
     maxDiff = None
@@ -121,8 +313,17 @@ class TestRestful(unittest.TestCase):
 
 class TestAPI(TestRestful):
 
+    @unittest.mock.patch.dict(service.Options.creds, {})
     @unittest.mock.patch("redis.Redis", MockRedis)
-    def test_build(self):
+    @unittest.mock.patch("glob.glob")
+    @unittest.mock.patch('service.open', create=True)
+    def test_build(self, mock_open, mock_glob):
+
+        mock_glob.return_value = ["what/options_people.json"]
+
+        mock_open.side_effect = [
+            unittest.mock.mock_open(read_data='{"stuff": "things"}').return_value
+        ]
 
         app = service.build()
 
@@ -130,6 +331,12 @@ class TestAPI(TestRestful):
         self.assertEqual(app.redis.host, "redis.cnc-forge")
         self.assertEqual(app.redis.charset, "utf-8")
         self.assertTrue(app.redis.decode_responses)
+        self.assertEqual(service.Options.creds, {
+            "people": {
+                "stuff": "things",
+                "verify": True
+            }
+        })
 
 class TestHealth(TestRestful):
 
@@ -369,25 +576,7 @@ class TestCnC(TestRestful):
 
         self.assertTrue(cnc.satisfied(field))
 
-    @unittest.mock.patch('service.open', create=True)
-    def test_secret(self, mock_open):
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"people": "stuff"}').return_value
-        ]
-
-        cnc = service.CnC()
-
-        self.assertEqual(cnc.secret({"name": "{{ things }}", "path": "people"}, {"things": "data.yaml"}), "stuff")
-
-        mock_open.assert_called_once_with("/opt/service/secret/data.yaml", "r")
-
-    @unittest.mock.patch('service.open', create=True)
-    def test_render(self, mock_open):
-
-        mock_open.side_effect = [
-            unittest.mock.mock_open(read_data='{"people": "stuff"}').return_value
-        ]
+    def test_render(self):
 
         cnc = service.CnC()
 
@@ -395,9 +584,6 @@ class TestCnC(TestRestful):
             {
                 "{{ people }}": [
                     "{{ stuff }}",
-                    {
-                        "secret": {"name": "{{ things }}", "path": "people"}
-                    },
                     True,
                     "{? 1 == 0 ?}",
                     "{? 1 == 1 ?}"
@@ -411,127 +597,20 @@ class TestCnC(TestRestful):
         ), {
             "stuff": [
                 "things",
-                "stuff",
                 True,
                 False,
                 True
             ]
         })
 
-    @unittest.mock.patch('requests.Session')
-    @unittest.mock.patch('service.open', create=True)
-    def test_api(self, mock_open, mock_session):
-
-        mock_session.return_value.headers = {}
-
-        def secrets(path, mode):
-
-            if path.endswith("things.yaml"):
-                read_data = '{"people": "stuff"}'
-            elif path.endswith("auth.yaml"):
-                read_data = '{"username": "me", "password": "ssh"}'
-            elif path.endswith("token.yaml"):
-                read_data = '{"token": "toll"}'
-            elif path.endswith("headers.yaml"):
-                read_data = '{"first": "yep", "second": "sure"}'
-
-            return unittest.mock.mock_open(read_data=read_data).return_value
-
-        mock_open.side_effect = secrets
-
-        values = {
-            "a": 1,
-            "b": 2
+    @unittest.mock.patch.dict(service.Options.creds, {
+        "default": {
+            "url": "arcade",
+            "verify": True
         }
-
-        api = {
-            "uri": {
-                "secret": {
-                    "name": "things.yaml",
-                    "path": "people"
-                }
-            },
-            "verify": False,
-            "params": {"yin": "{{ a }}"},
-            "body": {"yang": "{{ b }}"},
-            "auth": {"secret": "auth.yaml"},
-            "token": {
-                "secret": {
-                    "name": "token.yaml",
-                    "path": "token"
-                }
-            },
-            "headers": {
-                "secret": "headers.yaml"
-            }
-        }
-
-        mock_session.return_value.get.return_value.json.return_value = [1, 2, 3]
-
-        cnc = service.CnC()
-
-        extra = {}
-
-        cnc.api(api, values, extra)
-
-        self.assertEqual(extra, {
-            "options": [1, 2, 3]
-        })
-
-        self.assertEqual(mock_session.return_value.auth, ("me", "ssh"))
-
-        self.assertEqual(mock_session.return_value.headers, {
-            "Authorization": "Bearer toll",
-            "first": "yep",
-            "second": "sure"
-        })
-
-        mock_session.return_value.get.assert_called_once_with(
-            "stuff",
-            verify=False,
-            params={"yin": '1'},
-            json={"yang": '2'}
-        )
-
-        mock_session.return_value.get.return_value.json.return_value = {
-            "numbers": [
-                {
-                    "id": 1,
-                    "name": "one"
-                },
-                {
-                    "id": 2,
-                    "name": "two"
-                },
-                {
-                    "id": 3,
-                    "name": "three"
-                }
-            ]
-        }
-
-        api = {
-            "uri": "yep",
-            "options": "numbers",
-            "option": "id",
-            "title": "name"
-        }
-
-        extra = {}
-
-        cnc.api(api, values, extra)
-
-        self.assertEqual(extra, {
-            "options": [1, 2, 3],
-            "titles": {
-                1: "one",
-                2: "two",
-                3: "three"
-            }
-        })
-
-    @unittest.mock.patch('requests.Session')
-    def test_field(self, mock_session):
+    })
+    @unittest.mock.patch('requests.Session.request')
+    def test_field(self, mock_request):
 
         cnc = service.CnC()
 
@@ -590,9 +669,9 @@ class TestCnC(TestRestful):
         self.assertEqual(fields["happy"].default, "7085 bone")
         self.assertEqual(fields["happy"].options, [1, 2, 3])
 
-        # api
+        # options
 
-        mock_session.return_value.get.return_value.json.return_value = {
+        mock_request.return_value.json.return_value = {
             "numbers": [
                 {
                     "id": 1,
@@ -611,9 +690,8 @@ class TestCnC(TestRestful):
 
         field = {
             "name": "friend",
-            "api": {
-                "uri": "yep",
-                "options": "numbers",
+            "options": {
+                "results": "numbers",
                 "option": "id",
                 "title": "name"
             }
