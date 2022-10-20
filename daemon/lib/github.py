@@ -141,7 +141,7 @@ class GitHub:
             params = {**params, "page": params["page"] + 1}
             results = self.request("GET", path, params, json)
 
-    def repo(self):
+    def repo(self, ensure=True):
         """
         Ensure a repo exists, and can be checked out and committed against
         """
@@ -157,6 +157,9 @@ class GitHub:
                 found = True
 
         if not found:
+
+            if not ensure:
+                return False
 
             create = {
                 "name": self.data["name"],
@@ -185,6 +188,8 @@ class GitHub:
         # Now that we know the default we can set the base
 
         self.data.setdefault("base", self.data["default"])
+
+        return True
 
     def hook(self):
         """
@@ -275,9 +280,9 @@ class GitHub:
 
         shutil.rmtree(destination, ignore_errors=True)
 
-        # If we're testing, just make the directory
+        # If we're testing and the repo doesn't exists, just make the directory
 
-        if self.cnc.data["test"]:
+        if not self.repo(ensure=not self.cnc.data["test"]):
             os.makedirs(destination)
             return
 
@@ -288,13 +293,10 @@ class GitHub:
         self.data.setdefault("branch", branch)
         self.data.setdefault("title", branch)
 
-        # Make sure the repo exists and has a default branch
-
-        self.repo()
-
         # Make sure hooks are there
 
-        self.hook()
+        if not self.cnc.data["test"]:
+            self.hook()
 
         # Make sure we have all the branches we need
 
