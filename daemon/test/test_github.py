@@ -171,7 +171,7 @@ class TestGitHub(unittest.TestCase):
 
         self.github.request = unittest.mock.MagicMock(return_value=[True])
 
-        self.github.repo()
+        self.assertTrue(self.github.repo())
 
         self.assertEqual(self.github.data, {
             "path": "does/exist",
@@ -183,6 +183,31 @@ class TestGitHub(unittest.TestCase):
 
         self.github.iterate.assert_called_once_with("user/repos")
         self.github.request.assert_called_once_with("GET", "repos/does/exist/branches")
+
+        # org repo dooesn't exist but don't ensure
+
+        self.github.data = {
+            "path": "doesnt/exist",
+            "org": "doesnt",
+            "name": "exist"
+        }
+
+        self.github.request.side_effect = [
+            {
+                "default_branch": "notracist"
+            },
+            [
+                True
+            ]
+        ]
+
+        self.assertFalse(self.github.repo(ensure=False))
+
+        self.assertEqual(self.github.data, {
+            "path": "doesnt/exist",
+            "org": "doesnt",
+            "name": "exist"
+        })
 
         # org repo dooesn't exist
 
@@ -466,6 +491,8 @@ class TestGitHub(unittest.TestCase):
 
         # test
 
+        self.github.repo.return_value = False
+
         self.github.code()
 
         mock_chdir.assert_has_calls([
@@ -481,12 +508,13 @@ class TestGitHub(unittest.TestCase):
             "base": "drum"
         })
 
-        self.github.repo.assert_not_called()
+        self.github.repo.assert_called_once_with(ensure=False)
         self.github.hook.assert_not_called()
         self.github.branch.assert_not_called()
 
         # commit
 
+        self.github.repo.return_value = True
         self.github.cnc.data["test"] = False
 
         self.github.code()
@@ -500,7 +528,7 @@ class TestGitHub(unittest.TestCase):
             "title": "mr-sweat"
         })
 
-        self.github.repo.assert_called_once_with()
+        self.github.repo.assert_called_with(ensure=True)
         self.github.hook.assert_called_once_with()
         self.github.branch.assert_has_calls([
             unittest.mock.call("drum", "def"),
