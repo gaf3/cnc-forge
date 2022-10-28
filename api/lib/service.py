@@ -421,10 +421,16 @@ class CnC(flask_restful.Resource):
 
         cnc["test"] = flask.request.json.get("test", False)
         cnc["values"].update({field.name: field.value for field in fields})
-        cnc["values"]["code"] = cnc["values"]["craft"].replace('-', '_')
+
+        craft = cnc["values"]["craft"]
+
+        if isinstance(craft, list):
+            craft = craft[0]
+
+        cnc["values"]["code"] = craft.replace('-', '_')
         cnc["status"] = "Created"
 
-        cnc["id"] = f"{cnc['values']['craft']}-{cnc['values']['forge']}-{int(time.time())}"
+        cnc["id"] = f"{craft}-{cnc['values']['forge']}-{int(time.time())}"
 
         cnc["values"]["cnc"] = cnc["id"]
 

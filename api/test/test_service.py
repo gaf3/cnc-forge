@@ -966,11 +966,27 @@ class TestCnC(TestRestful):
 
         self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
 
+        mock_forge.return_value = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "craft",
+                        "validation": None
+                    },
+                    {
+                        "name": "some"
+                    }
+                ]
+            }
+        }
+
         mock_exists.return_value = False
 
         response = self.api.post("/cnc/here", json={
             "values": {
-                "craft": "fun-time",
+                "craft": ["fun-time"],
                 "some": "thing"
             },
             "test": True
@@ -982,13 +998,17 @@ class TestCnC(TestRestful):
             "input": {
                 "fields": [
                     {
+                        "name": "craft",
+                        "validation": None
+                    },
+                    {
                         "name": "some"
                     }
                 ]
             },
             "values": {
                 "forge": "here",
-                "craft": "fun-time",
+                "craft": ["fun-time"],
                 "code": "fun_time",
                 "some": "thing",
                 "cnc": "fun-time-here-1604275200"
