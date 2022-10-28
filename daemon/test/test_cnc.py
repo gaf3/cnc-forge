@@ -154,7 +154,8 @@ class TestCnC(unittest.TestCase):
         mock_open.assert_called_once_with("/opt/service/cnc/sweat/source/stuff", "r")
 
     @unittest.mock.patch("cnc.open", create=True)
-    def test_destination(self, mock_open):
+    @unittest.mock.patch("os.path.exists")
+    def test_destination(self, mock_exists, mock_open):
 
         self.assertRaisesRegex(Exception, "invalid path: ..", self.cnc.destination, {"destination": ".."})
 
@@ -173,6 +174,22 @@ class TestCnC(unittest.TestCase):
 
         mock_open.assert_called_with("/opt/service/cnc/sweat/destination/things", "w")
         mock_write.write.assert_called_once_with("dest")
+
+        mock_open.reset_mock()
+        mock_exists.return_value = False
+        mock_open.side_effect = [mock_read, mock_write]
+
+        self.cnc.destination({"destination": "things", "replace": False}, "dest")
+
+        mock_open.assert_called_with("/opt/service/cnc/sweat/destination/things", "w")
+        mock_write.write.assert_called_once_with("dest")
+
+        mock_open.reset_mock()
+        mock_exists.return_value = True
+
+        self.cnc.destination({"destination": "things", "replace": False}, "dest")
+
+        mock_open.assert_not_called()
 
     @unittest.mock.patch("shutil.copy")
     def test_copy(self, mock_copy):
