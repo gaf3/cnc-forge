@@ -2,7 +2,7 @@
 Module for CnC
 """
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,inconsistent-return-statements
 
 import os
 import copy
@@ -181,6 +181,9 @@ class CnC:
 
         if path:
             return destination
+
+        if not content.get("replace", True) and os.path.exists(destination):
+            return
 
         if data is None:
             with open(destination, "r") as destination_file:
