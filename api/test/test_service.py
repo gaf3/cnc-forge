@@ -716,10 +716,13 @@ class TestCnC(TestRestful):
         mock_open.side_effect = [
            unittest.mock.mock_open(read_data='fields:\n- name: extra').return_value,
            unittest.mock.mock_open(read_data='{}').return_value,
+           unittest.mock.mock_open(read_data='{}').return_value,
            unittest.mock.mock_open(read_data='{}').return_value
          ]
 
         cnc = service.CnC()
+
+        # blank
 
         forge = {
             "id": "here",
@@ -748,6 +751,8 @@ class TestCnC(TestRestful):
         ],ready=True)
 
         mock_exists.assert_called_once_with("/opt/service/forge/fields.yaml")
+
+        # additional
 
         forge = {
             "id": "here",
@@ -783,6 +788,38 @@ class TestCnC(TestRestful):
                 "value":"thing"
             }
         ])
+
+        # override
+
+        forge = {
+            "id": "here",
+            "description": "Here",
+            "input": {
+                "craft": "some",
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            }
+        }
+
+        fields = cnc.fields(forge, {"some": "thing"})
+
+        self.assertFields(fields, [
+            {
+                "name": "forge",
+                "description": "what to craft from",
+                "readonly": True,
+                "value": "here"
+            },
+            {
+                "name":"some",
+                "value":"thing"
+            }
+        ])
+
+        # reserved
 
         forge = {
             "id": "here",
@@ -868,7 +905,11 @@ class TestCnC(TestRestful):
 
         mock_forges.return_value = {}
 
+        # not found
+
         self.assertStatusValue(self.api.post("/cnc/nope"), 404, "message", "forge 'nope' not found")
+
+        # invalid
 
         mock_forges.return_value = {"here": True}
 
@@ -912,6 +953,8 @@ class TestCnC(TestRestful):
                 "value":"thing"
             }
         ], ready=True, valid=False)
+
+        # correct
 
         response = self.api.post("/cnc/here", json={
             "values": {
@@ -966,14 +1009,16 @@ class TestCnC(TestRestful):
 
         self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
 
+        # override multi
+
         mock_forge.return_value = {
             "id": "here",
             "description": "Here",
             "input": {
+                "craft": "many",
                 "fields": [
                     {
-                        "name": "craft",
-                        "validation": None
+                        "name": "many"
                     },
                     {
                         "name": "some"
@@ -986,7 +1031,7 @@ class TestCnC(TestRestful):
 
         response = self.api.post("/cnc/here", json={
             "values": {
-                "craft": ["fun-time"],
+                "many": ["fun-time"],
                 "some": "thing"
             },
             "test": True
@@ -996,10 +1041,10 @@ class TestCnC(TestRestful):
             "id": "fun-time-here-1604275200",
             "description": "Here",
             "input": {
+                "craft": "many",
                 "fields": [
                     {
-                        "name": "craft",
-                        "validation": None
+                        "name": "many",
                     },
                     {
                         "name": "some"
@@ -1008,7 +1053,7 @@ class TestCnC(TestRestful):
             },
             "values": {
                 "forge": "here",
-                "craft": ["fun-time"],
+                "many": ["fun-time"],
                 "code": "fun_time",
                 "some": "thing",
                 "cnc": "fun-time-here-1604275200"

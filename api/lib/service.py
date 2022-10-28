@@ -20,20 +20,19 @@ import flask_restful
 import jinja2
 import opengui
 
-FIELDS = [
-    {
-        "name": "forge",
-        "description": "what to craft from",
-        "readonly": True
-    },
-    {
-        "name": "craft",
-        "description": "name of what to craft, used for repos, branches, change requests",
-        "validation": r'^[a-z][a-z0-9\-]{1,46}$',
-        "required": True,
-        "trigger": True
-    }
-]
+FORGE = {
+    "name": "forge",
+    "description": "what to craft from",
+    "readonly": True
+}
+
+CRAFT = {
+    "name": "craft",
+    "description": "name of what to craft, used for repos, branches, change requests",
+    "validation": r'^[a-z][a-z0-9\-]{1,46}$',
+    "required": True,
+    "trigger": True
+}
 
 RESERVED = [
     "forge",
@@ -357,9 +356,14 @@ class CnC(flask_restful.Resource):
 
         values["forge"] = forge['id']
 
+        fields = [FORGE]
+
+        if "craft" not in forge.get("input", {}):
+            fields.append(CRAFT)
+
         fields = opengui.Fields(
             values=values,
-            fields=FIELDS,
+            fields=fields,
             ready=True
         )
 
@@ -422,7 +426,7 @@ class CnC(flask_restful.Resource):
         cnc["test"] = flask.request.json.get("test", False)
         cnc["values"].update({field.name: field.value for field in fields})
 
-        craft = cnc["values"]["craft"]
+        craft = cnc["values"][forge["input"]["craft"] if "craft" in forge.get("input", {}) else "craft"]
 
         if isinstance(craft, list):
             craft = craft[0]
