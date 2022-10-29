@@ -178,6 +178,8 @@ class TestOptions(unittest.TestCase):
     })
     def test_retrieve(self):
 
+        # basic
+
         options = service.Options({})
 
         options.session = unittest.mock.MagicMock()
@@ -199,6 +201,8 @@ class TestOptions(unittest.TestCase):
             params={},
             json={}
         )
+
+        # lookups
 
         data = {
             "path": "disco",
@@ -228,6 +232,73 @@ class TestOptions(unittest.TestCase):
                     "name": "three"
                 }
             ]
+        }
+
+        extra = {}
+
+        options.retrieve(extra)
+
+        self.assertEqual(extra, {
+            "options": [1, 2, 3],
+            "titles": {
+                1: "one",
+                2: "two",
+                3: "three"
+            }
+        })
+
+        options.session.request.assert_called_with(
+            "GET",
+            "arcade/disco",
+            verify=True,
+            params={"a": 1},
+            json={"b": 2}
+        )
+
+        # overscore
+
+        data = {
+            "path": "disco",
+            "params": {"a": 1},
+            "body": {"b": 2},
+            "results": "big__numbers",
+            "option": "id__number",
+            "title": "name__string"
+        }
+
+        options = service.Options(data)
+
+        options.session = unittest.mock.MagicMock()
+
+        options.session.request.return_value.json.return_value = {
+            "big": {
+                "numbers": [
+                    {
+                        "id": {
+                            "number": 1
+                        },
+                        "name": {
+                            "string": "one"
+                        }
+                    },
+                    {
+                        "id": {
+                            "number": 2
+                        },
+                        "name": {
+                            "string": "two"
+                        }
+                    },
+                    {
+                        "id": {
+                            "number": 3
+                        },
+                        "name": {
+                            "string": "three"
+                        }
+                    }
+                ]
+            }
         }
 
         extra = {}

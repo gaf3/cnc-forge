@@ -19,6 +19,7 @@ import flask_restful
 
 import jinja2
 import opengui
+import overscore
 
 FORGE = {
     "name": "forge",
@@ -118,7 +119,7 @@ class Options:
         results = self.session.request(self.method, url, verify=self.verify, params=self.params, json=self.body).json()
 
         if self.results:
-            results = results[self.results]
+            results = overscore.get(results, self.results)
 
         extra["options"] = []
 
@@ -127,9 +128,11 @@ class Options:
 
         for result in results:
             if self.option:
-                extra["options"].append(result[self.option])
+                option = overscore.get(result, self.option)
+                extra["options"].append(option)
                 if self.title:
-                    extra["titles"][result[self.option]] = result[self.title]
+                    title = overscore.get(result, self.title)
+                    extra["titles"][option] = title
             else:
                 extra["options"].append(result)
 
