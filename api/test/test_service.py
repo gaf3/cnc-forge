@@ -658,12 +658,13 @@ class TestCnC(TestRestful):
                     True,
                     "{? 1 == 0 ?}",
                     "{? 1 == 1 ?}"
-                ]
+                ],
+                "thingies": "{[ things ]}"
             },
             {
                 "people": "stuff",
                 "stuff": "things",
-                "things": "data.yaml"
+                "things": [1, 2, 3]
             }
         ), {
             "stuff": [
@@ -671,7 +672,8 @@ class TestCnC(TestRestful):
                 True,
                 False,
                 True
-            ]
+            ],
+            "thingies": [1, 2, 3]
         })
 
     @unittest.mock.patch.dict(service.Options.creds, {
