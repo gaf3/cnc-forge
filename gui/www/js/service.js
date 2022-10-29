@@ -124,8 +124,11 @@ DRApp.controller("Base",null,{
         this.application.render(this.it);
     },
     cnc_retrieve: function() {
+        var previous = this.it;
         this.it = this.rest("GET", "api/cnc/" + DRApp.current.path.id);
-        this.application.render(this.it);
+        if (previous.yaml != this.it.yaml) {
+            this.application.render(this.it);
+        }
         this.cnc_timer = window.setTimeout($.proxy(this, "cnc_refresh"), 5000);
     },
     cnc_retry: function() {
