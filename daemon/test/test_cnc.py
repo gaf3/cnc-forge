@@ -34,6 +34,8 @@ class TestCnC(unittest.TestCase):
         self.assertEqual(False, self.cnc.transform(False, {}))
         self.assertEqual(True, self.cnc.transform("{? 1 == 1 ?}", {}))
         self.assertEqual(False, self.cnc.transform("{? 1 == 0 ?}", {}))
+        self.assertEqual(None, self.cnc.transform("{[ a__b ]}", {}))
+        self.assertEqual(3, self.cnc.transform("{[ a__b ]}", {"a": {"b": 3}}))
 
     def test_transpose(self):
 

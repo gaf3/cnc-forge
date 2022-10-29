@@ -316,6 +316,9 @@ class CnC(flask_restful.Resource):
             if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
                 return self.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
 
+            if len(template) > 4 and template[:2] == "{[" and template[-2:] == "]}":
+                return overscore.get(values, template[2:-3].strip())
+
             return self.env.from_string(template).render(**values)
 
         if isinstance(template, dict):

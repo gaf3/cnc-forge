@@ -12,6 +12,8 @@ import yaml
 import shutil
 import fnmatch
 
+import overscore
+
 import github
 
 class CnC:
@@ -35,6 +37,8 @@ class CnC:
         if isinstance(template, str):
             if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
                 return self.daemon.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
+            if len(template) > 4 and template[:2] == "{[" and template[-2:] == "]}":
+                return overscore.get(values, template[2:-3].strip())
             return self.daemon.env.from_string(template).render(**values)
         if isinstance(template, list):
             return [self.transform(item, values) for item in template]
