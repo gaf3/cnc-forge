@@ -505,7 +505,9 @@ class TestGitHub(unittest.TestCase):
             "path": "my/stuff",
             "prefix": "mr",
             "default": "def",
-            "base": "drum"
+            "base": "drum",
+            "branch": "mr-sweat",
+            "title": "mr-sweat"
         })
 
         self.github.repo.assert_called_once_with(ensure=False)
