@@ -417,9 +417,9 @@ class CnC:
                 content[collection] = [content[collection]]
             content[collection] = [pattern[:-1] if pattern[-1] == "/" else pattern for pattern in content[collection]]
 
-        # Transform the source on templating
+        # Transform the source on templating, using destination if it doesn't exist for remove
 
-        content["source"] = self.transform(content["source"], values)
+        content["source"] = self.transform(content.get("source", content.get("destination")), values)
 
         if content["source"] == "/":
             sources = [""]
@@ -453,7 +453,8 @@ class CnC:
             change["github"] = self.transform(change["github"], values)
             controller = github.GitHub(self, change["github"])
 
-        controller.change()
+        if controller is not None:
+            controller.change()
 
         # Go through each content, which it'll check conditions, transpose, and iterate
 
