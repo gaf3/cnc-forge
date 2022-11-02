@@ -201,16 +201,50 @@ class CnC:
         Copies the content of source to desintation unchanged
         """
 
-        shutil.copy(
-            self.source(content, path=True),
-            self.destination(content, path=True)
-        )
+        source = self.source(content, path=True)
+        destination = self.destination(content, path=True)
+
+        if not content.get("replace", True) and os.path.exists(destination):
+            return
+
+        shutil.copy(source, destination)
+
+    def remove(self, content):
+        """
+        Removes the content of desintation
+        """
+
+        destination = self.destination(content, path=True)
+
+        if os.path.isdir(destination):
+            shutil.rmtree(destination)
+            return
+
+        os.remove(destination)
 
     @staticmethod
-    def text(source, destination, location):
+    def text(source, destination, location, remove):
         """
         Inserts destination into source at location if not present
         """
+
+        if remove:
+
+            if source not in destination:
+                return destination
+
+            if isinstance(location, bool) and location:
+                return "".join(destination.split(source))
+
+            if f"cnc-forge: {location}" in destination:
+
+                if source[-1] != "\n":
+                    source = f"{source}\n"
+
+                sections = destination.split(f"cnc-forge: {location}")
+                sections[0] = "".join(sections[0].split(source))
+                return f"cnc-forge: {location}".join(sections)
+
 
         if source in destination:
             return destination
@@ -230,25 +264,8 @@ class CnC:
 
         return "\n".join(lines)
 
-    def value(self, value, location):
-        """
-        Recursively get location
-        """
-
-        if not location:
-            return value
-
-        if isinstance(location, str):
-            location = location.split('.')
-
-        place = location.pop(0)
-
-        if place.isdigit() or (place[0] == '-' and place[1:].isidigit()):
-            place = int(place)
-
-        return self.value(value[place], location)
-
-    def json(self, source, destination, location):
+    @staticmethod
+    def json(source, destination, location, remove):
         """
         Inserts destination into source at location if not present
         """
@@ -256,14 +273,18 @@ class CnC:
         source = json.loads(source)
         destination = json.loads(destination)
 
-        value = self.value(destination, location)
+        value = overscore.get(destination, location)
 
-        if source not in value:
+        if source not in value and not remove:
             value.append(source)
+
+        if source in value and remove:
+            value.remove(source)
 
         return json.dumps(destination, indent=4)
 
-    def yaml(self, source, destination, location):
+    @staticmethod
+    def yaml(source, destination, location, remove):
         """
         Inserts destination into source at location if not present
         """
@@ -271,10 +292,13 @@ class CnC:
         source = yaml.safe_load(source)
         destination = yaml.safe_load(destination)
 
-        value = self.value(destination, location)
+        value = overscore.get(destination, location)
 
-        if source not in value:
+        if source not in value and not remove:
             value.append(source)
+
+        if source in value and remove:
+            value.remove(source)
 
         return yaml.safe_dump(destination, default_flow_style=False)
 
@@ -309,6 +333,12 @@ class CnC:
 
         # If we're preserving, just copy, else load source and transformation to destination
 
+        remove = content.get("remove", False)
+
+        if remove and "text" not in content and "json" not in content and "yaml" not in content:
+            self.remove(content)
+            return
+
         if self.preserve(content):
             self.copy(content)
             return
@@ -322,12 +352,13 @@ class CnC:
         if "text" in content:
             destination = self.text(
                 source, self.destination(content),
-                self.transform(content["text"], values) if isinstance(content["text"], str) else content["text"]
+                self.transform(content["text"], values) if isinstance(content["text"], str) else content["text"],
+                remove
             )
         elif "json" in content:
-            destination = self.json(source, self.destination(content), self.transform(content["json"], values))
+            destination = self.json(source, self.destination(content), self.transform(content["json"], values), remove)
         elif "yaml" in content:
-            destination = self.yaml(source, self.destination(content), self.transform(content["yaml"], values))
+            destination = self.yaml(source, self.destination(content), self.transform(content["yaml"], values), remove)
         else:
             mode = True
             destination = source

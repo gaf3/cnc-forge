@@ -193,8 +193,15 @@ class TestCnC(unittest.TestCase):
 
         mock_open.assert_not_called()
 
+    @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("shutil.copy")
-    def test_copy(self, mock_copy):
+    def test_copy(self, mock_copy, mock_exists):
+
+        mock_exists.return_value = True
+
+        self.cnc.copy({"source": "src", "destination": "dest", "replace": False})
+
+        mock_copy.assert_not_called()
 
         self.cnc.copy({"source": "src", "destination": "dest"})
 
@@ -203,50 +210,52 @@ class TestCnC(unittest.TestCase):
             "/opt/service/cnc/sweat/destination/dest"
         )
 
+    @unittest.mock.patch("os.path.isdir")
+    @unittest.mock.patch("shutil.rmtree")
+    @unittest.mock.patch("os.remove")
+    def test_remove(self, mock_remove, mock_rmtree, mock_isdir):
+
+        # dir
+
+        mock_isdir.return_value = True
+
+        self.cnc.remove({"destination": "dest"})
+
+        mock_rmtree.assert_called_once_with(
+            "/opt/service/cnc/sweat/destination/dest"
+        )
+
+        # file
+
+        mock_isdir.return_value = False
+
+        self.cnc.remove({"destination": "dest"})
+
+        mock_remove.assert_called_once_with(
+            "/opt/service/cnc/sweat/destination/dest"
+        )
+
     def test_text(self):
 
-        destination = "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n"
+        destination = "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n"
 
-        self.assertEqual(self.cnc.text("nope\n", destination, False), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
-        self.assertEqual(self.cnc.text("foe\n", destination, True), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
-        self.assertEqual(self.cnc.text("yep\n", destination, True), "fie\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep\n")
-        self.assertEqual(self.cnc.text("yep\n", destination, "here"), "fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
+        # add
 
-    def test_value(self):
+        self.assertEqual(self.cnc.text("nope\n", destination, False, False), "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
+        self.assertEqual(self.cnc.text("foe\n", destination, True, False), "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n")
+        self.assertEqual(self.cnc.text("yep\n", destination, True, False), "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep\n")
+        self.assertEqual(self.cnc.text("yep\n", destination, "here", False), "fee\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
 
-        value = {
-            "a": {
-                "b": [
-                    {"c": "d"},
-                    {"e": "f"}
-                ]
-            }
-        }
+        # remove
 
-        self.assertEqual(self.cnc.value(value, False), {
-            "a": {
-                "b": [
-                    {"c": "d"},
-                    {"e": "f"}
-                ]
-            }
-        })
-        self.assertEqual(self.cnc.value(value, "a"), {
-            "b": [
-                {"c": "d"},
-                {"e": "f"}
-            ]
-        })
-        self.assertEqual(self.cnc.value(value, "a.b"), [
-            {"c": "d"},
-            {"e": "f"}
-        ])
-        self.assertEqual(self.cnc.value(value, "a.b.1"), {
-            "e": "f"
-        })
-        self.assertEqual(self.cnc.value(value, "a.b.1.e"), "f")
+        self.assertEqual(self.cnc.text("nope\n", "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n", False, True), destination)
+        self.assertEqual(self.cnc.text("foe\n", "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n", True, True), "fee\nfie\n  # cnc-forge: here  \nfum\n")
+        self.assertEqual(self.cnc.text("yep\n", "fee\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep\n", True, True), destination)
+        self.assertEqual(self.cnc.text("yep", "fee\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n", "here", True), destination)
 
     def test_json(self):
+
+        # add
 
         destination = json.dumps({
             "a": {
@@ -258,7 +267,7 @@ class TestCnC(unittest.TestCase):
         })
         source = json.dumps({"g": "h"})
 
-        self.assertEqual(json.loads(self.cnc.json(source, destination, "a.b")), {
+        self.assertEqual(json.loads(self.cnc.json(source, destination, "a__b", False)), {
             "a": {
                 "b": [
                     {"c": "d"},
@@ -268,7 +277,31 @@ class TestCnC(unittest.TestCase):
             }
         })
 
+        # remove
+
+        destination = json.dumps({
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"},
+                    {"g": "h"}
+                ]
+            }
+        })
+        source = json.dumps({"g": "h"})
+
+        self.assertEqual(json.loads(self.cnc.json(source, destination, "a__b", True)), {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
+                ]
+            }
+        })
+
     def test_yaml(self):
+
+        # add
 
         destination = yaml.safe_dump({
             "a": {
@@ -280,12 +313,34 @@ class TestCnC(unittest.TestCase):
         })
         source = yaml.safe_dump({"g": "h"})
 
-        self.assertEqual(yaml.safe_load(self.cnc.yaml(source, destination, "a.b")), {
+        self.assertEqual(yaml.safe_load(self.cnc.yaml(source, destination, "a__b", False)), {
             "a": {
                 "b": [
                     {"c": "d"},
                     {"e": "f"},
                     {"g": "h"}
+                ]
+            }
+        })
+
+        # remove
+
+        destination = yaml.safe_dump({
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"},
+                    {"g": "h"}
+                ]
+            }
+        })
+        source = yaml.safe_dump({"g": "h"})
+
+        self.assertEqual(yaml.safe_load(self.cnc.yaml(source, destination, "a__b", True)), {
+            "a": {
+                "b": [
+                    {"c": "d"},
+                    {"e": "f"}
                 ]
             }
         })
@@ -377,7 +432,9 @@ class TestCnC(unittest.TestCase):
     @unittest.mock.patch("cnc.open", create=True)
     @unittest.mock.patch("os.chmod")
     @unittest.mock.patch("os.stat")
-    def test_file(self, mock_stat, mock_mode, mock_open, mock_copy):
+    @unittest.mock.patch("os.path.isdir")
+    @unittest.mock.patch("os.remove")
+    def test_file(self, mock_remove, mock_isdir, mock_stat, mock_mode, mock_open, mock_copy):
 
         # Copy
 
@@ -397,13 +454,32 @@ class TestCnC(unittest.TestCase):
             "/opt/service/cnc/sweat/destination/a/b/c"
         )
 
+        # Remove
+
+        mock_isdir.return_value = False
+
+        content = {
+            "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "remove": ["a/b/c"],
+            "transform": []
+        }
+
+        self.cnc.file(content, None)
+
+        mock_remove.assert_called_once_with(
+            "/opt/service/cnc/sweat/destination/a/b/c"
+        )
+
         # Text
 
         mock_write = unittest.mock.mock_open().return_value
 
         mock_open.side_effect = [
             unittest.mock.mock_open(read_data="{{ sure }}\n").return_value,
-            unittest.mock.mock_open(read_data="fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
+            unittest.mock.mock_open(read_data="fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
             mock_write
         ]
 
@@ -419,13 +495,13 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.file(content, {"sure": "yep", "there": "here"})
 
-        mock_write.write.assert_called_once_with("fie\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
+        mock_write.write.assert_called_once_with("fee\nfie\nyep\n  # cnc-forge: here  \nfoe\nfum\n")
 
         mock_write = unittest.mock.mock_open().return_value
 
         mock_open.side_effect = [
             unittest.mock.mock_open(read_data="{{ sure }}\n").return_value,
-            unittest.mock.mock_open(read_data="fie\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
+            unittest.mock.mock_open(read_data="fee\nfie\n  # cnc-forge: here  \nfoe\nfum\n").return_value,
             mock_write
         ]
 
@@ -441,7 +517,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.file(content, {"sure": "yep", "there": "here"})
 
-        mock_write.write.assert_called_once_with("fie\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep")
+        mock_write.write.assert_called_once_with("fee\nfie\n  # cnc-forge: here  \nfoe\nfum\nyep")
 
         # JSON
 
