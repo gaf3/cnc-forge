@@ -417,7 +417,7 @@ class CnC(flask_restful.Resource):
         forge = Forge.forge(id)
 
         if "action" not in (flask.request.json or {}):
-            return {"message": f"missing action"}, 400
+            return {"message": "missing action"}, 400
 
         fields = self.fields(forge, (flask.request.json or {}).get("values"))
 
