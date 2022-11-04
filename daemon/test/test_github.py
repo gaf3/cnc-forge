@@ -477,7 +477,7 @@ class TestGitHub(unittest.TestCase):
         self.github.hook = unittest.mock.MagicMock()
         self.github.branch = unittest.mock.MagicMock()
 
-        self.github.cnc.data = {"id": "sweat", "test": True}
+        self.github.cnc.data = {"id": "sweat", "action": "test"}
         self.github.cnc.base.return_value = "noise"
 
         self.github.data = {
@@ -517,7 +517,7 @@ class TestGitHub(unittest.TestCase):
         # commit
 
         self.github.repo.return_value = True
-        self.github.cnc.data["test"] = False
+        self.github.cnc.data["action"] = "commit"
 
         self.github.code()
 
@@ -564,7 +564,7 @@ class TestGitHub(unittest.TestCase):
         self.github.link = unittest.mock.MagicMock()
         self.github.pull_request = unittest.mock.MagicMock()
 
-        self.github.cnc.data = {"id": "sweat", "test": True}
+        self.github.cnc.data = {"id": "sweat", "action": "test"}
         self.github.cnc.base.return_value = "noise"
 
         def exists(path):
@@ -603,7 +603,7 @@ class TestGitHub(unittest.TestCase):
 
         # commit
 
-        self.github.cnc.data["test"] = False
+        self.github.cnc.data["action"] = "commit"
 
         self.github.commit()
 

@@ -289,13 +289,13 @@ class GitHub:
 
         # If we're testing and the repo doesn't exists, just make the directory
 
-        if not self.repo(ensure=not self.cnc.data["test"]):
+        if not self.repo(ensure=not self.cnc.data["action"] == "test"):
             os.makedirs(destination)
             return
 
         # Make sure hooks are there
 
-        if not self.cnc.data["test"]:
+        if not self.cnc.data["action"] == "test":
             self.hook()
 
         # Make sure we have all the branches we need
@@ -320,7 +320,7 @@ class GitHub:
 
         # If we're testing, move a code-# dir
 
-        if self.cnc.data["test"]:
+        if self.cnc.data["action"] == "test":
 
             code = 0
 

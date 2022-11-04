@@ -982,7 +982,7 @@ class TestCnC(TestRestful):
 
         self.assertStatusValue(self.api.post("/cnc/nope"), 404, "message", "forge 'nope' not found")
 
-        # invalid
+        # no action
 
         mock_forges.return_value = {"here": True}
 
@@ -998,11 +998,16 @@ class TestCnC(TestRestful):
             }
         }
 
+        self.assertStatusValue(self.api.post("/cnc/here", json={}), 400, "message", "missing action")
+
+        # invalid
+
         response = self.api.post("/cnc/here", json={
             "values": {
                 "craft": "0fun",
                 "some": "thing"
-            }
+            },
+            "action": "commit"
         })
 
         self.assertStatusFields(response, 400, [
@@ -1033,7 +1038,8 @@ class TestCnC(TestRestful):
             "values": {
                 "craft": "fun-time",
                 "some": "thing"
-            }
+            },
+            "action": "commit"
         })
 
         self.assertStatusValue(response, 202, "cnc", {
@@ -1055,7 +1061,7 @@ class TestCnC(TestRestful):
                 "cnc": "fun-time-here-1604275200"
             },
             "status": "Created",
-            "test": False
+            "action": "commit"
         })
 
         self.assertEqual(json.loads(self.app.redis.data["/cnc/fun-time-here-1604275200"]), {
@@ -1077,7 +1083,7 @@ class TestCnC(TestRestful):
                 "cnc": "fun-time-here-1604275200"
             },
             "status": "Created",
-            "test": False
+            "action": "commit"
         })
 
         self.assertEqual(self.app.redis.expires["/cnc/fun-time-here-1604275200"], 86400)
@@ -1107,7 +1113,7 @@ class TestCnC(TestRestful):
                 "many": ["fun-time"],
                 "some": "thing"
             },
-            "test": True
+            "action": "test"
         })
 
         self.assertStatusValue(response, 202, "cnc", {
@@ -1132,7 +1138,7 @@ class TestCnC(TestRestful):
                 "cnc": "fun-time-here-1604275200"
             },
             "status": "Created",
-            "test": True
+            "action": "test"
         })
 
     def test_list(self):

@@ -197,6 +197,8 @@ class TestCnC(unittest.TestCase):
     @unittest.mock.patch("shutil.copy")
     def test_copy(self, mock_copy, mock_exists):
 
+        # no replace
+
         mock_exists.return_value = True
 
         self.cnc.copy({"source": "src", "destination": "dest", "replace": False})
@@ -781,6 +783,8 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.content = unittest.mock.MagicMock()
 
+        # commit
+
         change = {
             "github": {
                 "repo": "{{ here }}"
@@ -788,7 +792,8 @@ class TestCnC(unittest.TestCase):
             "content": [
                 {"condition": "{{ here == 'there' }}"},
                 {"condition": "{{ here == 'here' }}"}
-            ]
+            ],
+            "remove": False
         }
 
         self.cnc.change(change, {"here": "there"})
@@ -796,7 +801,27 @@ class TestCnC(unittest.TestCase):
         mock_github.return_value.change.assert_called_once_with()
 
         self.cnc.content.assert_called_once_with(
-            {"condition": "{{ here == 'there' }}"},
+            {"condition": "{{ here == 'there' }}", "remove": False},
+            {"here": "there"}
+        )
+
+        # remove
+
+        change = {
+            "github": {
+                "repo": "{{ here }}"
+            },
+            "content": [
+                {"condition": "{{ here == 'there' }}", "remove": True},
+                {"condition": "{{ here == 'here' }}"}
+            ],
+            "remove": False
+        }
+
+        self.cnc.change(change, {"here": "there"})
+
+        self.cnc.content.assert_called_with(
+            {"condition": "{{ here == 'there' }}", "remove": True},
             {"here": "there"}
         )
 
@@ -805,6 +830,8 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.change = unittest.mock.MagicMock()
 
+        # commit
+
         code = {
             "github": {
                 "repo": "{{ here }}"
@@ -812,7 +839,8 @@ class TestCnC(unittest.TestCase):
             "change": [
                 {"condition": "{{ here == 'there' }}"},
                 {"condition": "{{ here == 'here' }}"}
-            ]
+            ],
+            "remove": False
         }
 
         self.cnc.code(code, {"here": "there"})
@@ -820,11 +848,31 @@ class TestCnC(unittest.TestCase):
         mock_github.return_value.code.assert_called_once_with()
 
         self.cnc.change.assert_called_once_with(
-            {"condition": "{{ here == 'there' }}"},
+            {"condition": "{{ here == 'there' }}", "remove": False},
             {"here": "there"}
         )
 
         mock_github.return_value.commit.assert_called_once_with()
+
+        # remove
+
+        code = {
+            "github": {
+                "repo": "{{ here }}"
+            },
+            "change": [
+                {"condition": "{{ here == 'there' }}", "remove": True},
+                {"condition": "{{ here == 'here' }}"}
+            ],
+            "remove": False
+        }
+
+        self.cnc.code(code, {"here": "there"})
+
+        self.cnc.change.assert_called_with(
+            {"condition": "{{ here == 'there' }}", "remove": True},
+            {"here": "there"}
+        )
 
     def test_link(self):
 
@@ -838,7 +886,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.code = unittest.mock.MagicMock()
 
-        # Testing
+        # test
 
         self.cnc.data = {
             "id": "sweat",
@@ -849,7 +897,7 @@ class TestCnC(unittest.TestCase):
                 ]
             },
             "values": {"here": "there"},
-            "test": True
+            "action": "test"
         }
 
         self.cnc.process()
@@ -868,13 +916,13 @@ class TestCnC(unittest.TestCase):
                 {"condition": "{{ here == 'here' }}"}
             ],
             "status": "Completed",
-            "test": True
+            "action": "test"
         })
 
         mock_makedirs.assert_called_once_with("/opt/service/cnc/sweat")
 
         self.cnc.code.assert_called_once_with(
-            {"condition": "{{ here == 'there' }}"},
+            {"condition": "{{ here == 'there' }}", "remove": False},
             {"here": "there"}
         )
 
@@ -883,7 +931,7 @@ class TestCnC(unittest.TestCase):
             unittest.mock.call("/opt/service/cnc/sweat/source", ignore_errors=True)
         ])
 
-        # Committing
+        # commit
 
         self.cnc.data = {
             "id": "sweat",
@@ -894,12 +942,71 @@ class TestCnC(unittest.TestCase):
                 ]
             },
             "values": {"here": "there"},
-            "test": False
+            "action": "commit"
         }
 
         self.cnc.process()
 
-        mock_rmtree.assert_has_calls([
-            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True),
-            unittest.mock.call("/opt/service/cnc/sweat", ignore_errors=True)
-        ])
+        self.assertEqual(self.cnc.data , {
+            "id": "sweat",
+            "output": {
+                "code": [
+                    {"condition": "{{ here == 'there' }}"},
+                    {"condition": "{{ here == 'here' }}"}
+                ]
+            },
+            "values": {"here": "there"},
+            "code": [
+                {"condition": "{{ here == 'there' }}"},
+                {"condition": "{{ here == 'here' }}"}
+            ],
+            "status": "Completed",
+            "action": "commit"
+        })
+
+        mock_makedirs.assert_called_with("/opt/service/cnc/sweat")
+
+        self.cnc.code.assert_called_with(
+            {"condition": "{{ here == 'there' }}", "remove": False},
+            {"here": "there"}
+        )
+
+        # remove
+
+        self.cnc.data = {
+            "id": "sweat",
+            "output": {
+                "code": [
+                    {"condition": "{{ here == 'there' }}"},
+                    {"condition": "{{ here == 'here' }}"}
+                ]
+            },
+            "values": {"here": "there"},
+            "action": "remove"
+        }
+
+        self.cnc.process()
+
+        self.assertEqual(self.cnc.data , {
+            "id": "sweat",
+            "output": {
+                "code": [
+                    {"condition": "{{ here == 'there' }}"},
+                    {"condition": "{{ here == 'here' }}"}
+                ]
+            },
+            "values": {"here": "there"},
+            "code": [
+                {"condition": "{{ here == 'there' }}"},
+                {"condition": "{{ here == 'here' }}"}
+            ],
+            "status": "Completed",
+            "action": "remove"
+        })
+
+        mock_makedirs.assert_called_with("/opt/service/cnc/sweat")
+
+        self.cnc.code.assert_called_with(
+            {"condition": "{{ here == 'there' }}", "remove": True},
+            {"here": "there"}
+        )
