@@ -416,6 +416,9 @@ class CnC(flask_restful.Resource):
 
         forge = Forge.forge(id)
 
+        if "action" not in (flask.request.json or {}):
+            return {"message": f"missing action"}, 400
+
         fields = self.fields(forge, (flask.request.json or {}).get("values"))
 
         if not fields.validate():
@@ -429,7 +432,7 @@ class CnC(flask_restful.Resource):
             with open("/opt/service/forge/values.yaml", "r") as values_file:
                 cnc["values"].update(yaml.safe_load(values_file).get("values", {}))
 
-        cnc["test"] = flask.request.json.get("test", False)
+        cnc["action"] = flask.request.json["action"]
         cnc["values"].update({field.name: field.value for field in fields})
 
         craft = cnc["values"][forge["input"]["craft"] if "craft" in forge.get("input", {}) else "craft"]

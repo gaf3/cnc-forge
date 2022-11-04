@@ -4,10 +4,13 @@
         Cancel
     </button>
     {{?it.ready}}
-    <button type="button" OnClick="DRApp.current.controller.create_save(true);" class="uk-button uk-button-primary">
+    <button type="button" OnClick="DRApp.current.controller.create_save('remove');" class="uk-button uk-button-primary">
+        Remove
+    </button>
+    <button type="button" OnClick="DRApp.current.controller.create_save('test');" class="uk-button uk-button-primary">
         Try
     </button>
-    <button type="button" OnClick="DRApp.current.controller.create_save(false);" class="uk-button uk-button-primary">
+    <button type="button" OnClick="DRApp.current.controller.create_save('commit');" class="uk-button uk-button-primary">
         Commit
     </button>
     {{?}}

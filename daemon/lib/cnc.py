@@ -459,7 +459,7 @@ class CnC:
         # Go through each content, which it'll check conditions, transpose, and iterate
 
         for content, content_values in self.each(change["content"], values):
-            self.content(content, content_values)
+            self.content({"remove": change["remove"], **content}, content_values)
 
     def code(self, code, values):
         """
@@ -479,7 +479,7 @@ class CnC:
         # Go through each change, which it'll check conditions, transpose, and iterate
 
         for change, change_values in self.each(code["change"], values):
-            self.change(change, change_values)
+            self.change({"remove": code["remove"], **change}, change_values)
 
         # If there's a github block, use it to commit the code
 
@@ -513,13 +513,13 @@ class CnC:
         # Go through each code, which it'll check conditions, transpose, and iterate
 
         for code, code_values in self.each(self.data["code"], self.data["values"]):
-            self.code(code, code_values)
+            self.code({"remove": self.data["action"] == "remove", **code}, code_values)
 
         # If we're here we were successful and can clean up if we're not testing
 
         self.data["status"] = "Completed"
 
-        if self.data["test"]:
+        if self.data["action"] == "test":
             shutil.rmtree(f"{self.base()}/source", ignore_errors=True)
         else:
             shutil.rmtree(self.base(), ignore_errors=True)
