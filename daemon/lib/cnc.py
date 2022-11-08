@@ -5,14 +5,15 @@ Module for CnC
 # pylint: disable=too-many-public-methods,inconsistent-return-statements
 
 import os
-import copy
 import glob
 import json
 import yaml
 import shutil
 import fnmatch
 
+import jinja2
 import overscore
+import yaes
 
 import github
 
@@ -21,89 +22,13 @@ class CnC:
     Class that craft the code and changes
     """
 
-    def __init__(self, daemon, data):
+    def __init__(self, data):
         """
         Store the daemon
         """
 
         self.data = data
-        self.daemon = daemon
-
-    def transform(self, template, values):
-        """
-        Transform whatever's sent, either str or recurse through
-        """
-
-        if isinstance(template, str):
-            if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
-                return self.daemon.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
-            if len(template) > 4 and template[:2] == "{[" and template[-2:] == "]}":
-                return overscore.get(values, template[2:-3].strip())
-            return self.daemon.env.from_string(template).render(**values)
-        if isinstance(template, list):
-            return [self.transform(item, values) for item in template]
-        if isinstance(template, dict):
-            return {key: self.transform(item, values) for key, item in template.items()}
-
-        return template
-
-    @staticmethod
-    def transpose(block, values):
-        """
-        Transposes values
-        """
-
-        transpose = block.get("transpose", {})
-
-        return {derivative: values[original] for derivative, original in transpose.items() if original in values}
-
-    def iterate(self, block, values):
-        """
-        Iterates values with transposition
-        """
-
-        iterate_values = [self.transpose(block, values)]
-
-        iterate = block.get("iterate", {})
-
-        for one in sorted(iterate.keys()):
-            many_values = []
-            for many_value in iterate_values:
-                for value in values[iterate[one]]:
-                    many_values.append({**many_value, one: value})
-            iterate_values = many_values
-
-        return iterate_values
-
-    def condition(self, block, values):
-        """
-        Evaludates condition in values
-        """
-
-        if "condition" not in block:
-            return True
-
-        value = self.transform(block["condition"], values)
-
-        if isinstance(value, bool):
-            return value
-
-        return value == "True"
-
-    def each(self, blocks, values):
-        """
-        Go through blocks, checking condition
-        Eventually we will emit values too
-        """
-
-        if isinstance(blocks, dict):
-            blocks = [blocks]
-
-        for block in blocks:
-            for iterate_values in self.iterate(block, values):
-                block_values = {**values, **iterate_values, **block.get("values", {})}
-                if self.condition(block, block_values):
-                    yield copy.deepcopy(block), block_values
+        self.engine = yaes.Engine(jinja2.Environment(keep_trailing_newline=True))
 
     @staticmethod
     def exclude(content):
@@ -343,7 +268,7 @@ class CnC:
             self.copy(content)
             return
 
-        source = self.transform(self.source(content), values)
+        source = self.engine.transform(self.source(content), values)
 
         # See if we're injecting anywhere, else just overwrite
 
@@ -352,13 +277,13 @@ class CnC:
         if "text" in content:
             destination = self.text(
                 source, self.destination(content),
-                self.transform(content["text"], values) if isinstance(content["text"], str) else content["text"],
+                self.engine.transform(content["text"], values) if isinstance(content["text"], str) else content["text"],
                 remove
             )
         elif "json" in content:
-            destination = self.json(source, self.destination(content), self.transform(content["json"], values), remove)
+            destination = self.json(source, self.destination(content), self.engine.transform(content["json"], values), remove)
         elif "yaml" in content:
-            destination = self.yaml(source, self.destination(content), self.transform(content["yaml"], values), remove)
+            destination = self.yaml(source, self.destination(content), self.engine.transform(content["yaml"], values), remove)
         else:
             mode = True
             destination = source
@@ -412,14 +337,14 @@ class CnC:
         # Transform exclude, include, preserve, and transforma and ensure they're lists
 
         for collection in ["exclude", "include", "preserve", "transform"]:
-            content[collection] = self.transform(content.get(collection, []), values)
+            content[collection] = self.engine.transform(content.get(collection, []), values)
             if isinstance(content[collection], str):
                 content[collection] = [content[collection]]
             content[collection] = [pattern[:-1] if pattern[-1] == "/" else pattern for pattern in content[collection]]
 
         # Transform the source on templating, using destination if it doesn't exist for remove
 
-        content["source"] = self.transform(content.get("source", content.get("destination")), values)
+        content["source"] = self.engine.transform(content.get("source", content.get("destination")), values)
 
         if content["source"] == "/":
             sources = [""]
@@ -437,7 +362,7 @@ class CnC:
         for source in sources:
             self.craft({**content,
                 "source": source,
-                "destination": self.transform(content.get("destination", source), values)
+                "destination": self.engine.transform(content.get("destination", source), values)
             }, values)
 
     def change(self, change, values):
@@ -450,7 +375,7 @@ class CnC:
         controller = None
 
         if "github" in change:
-            change["github"] = self.transform(change["github"], values)
+            change["github"] = self.engine.transform(change["github"], values)
             controller = github.GitHub(self, change["github"])
 
         if controller is not None:
@@ -458,7 +383,7 @@ class CnC:
 
         # Go through each content, which it'll check conditions, transpose, and iterate
 
-        for content, content_values in self.each(change["content"], values):
+        for content, content_values in self.engine.each(change["content"], values):
             self.content({"remove": change["remove"], **content}, content_values)
 
     def code(self, code, values):
@@ -471,14 +396,14 @@ class CnC:
         controller = None
 
         if "github" in code:
-            code["github"] = self.transform(code["github"], values)
+            code["github"] = self.engine.transform(code["github"], values)
             controller = github.GitHub(self, code["github"])
 
         controller.code()
 
         # Go through each change, which it'll check conditions, transpose, and iterate
 
-        for change, change_values in self.each(code["change"], values):
+        for change, change_values in self.engine.each(code["change"], values):
             self.change({"remove": code["remove"], **change}, change_values)
 
         # If there's a github block, use it to commit the code
@@ -512,7 +437,7 @@ class CnC:
 
         # Go through each code, which it'll check conditions, transpose, and iterate
 
-        for code, code_values in self.each(self.data["code"], self.data["values"]):
+        for code, code_values in self.engine.each(self.data["code"], self.data["values"]):
             self.code({"remove": self.data["action"] == "remove", **code}, code_values)
 
         # If we're here we were successful and can clean up if we're not testing

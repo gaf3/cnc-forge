@@ -8,7 +8,6 @@ import time
 import traceback
 
 import redis
-import jinja2
 
 import cnc
 import github
@@ -26,8 +25,6 @@ class Daemon:
 
         github.GitHub.config()
 
-        self.env = jinja2.Environment(keep_trailing_newline=True)
-
     def process(self):
         """
         Processes all the routines for reminding
@@ -41,7 +38,7 @@ class Daemon:
                 continue
 
             try:
-                cnc.CnC(self, data).process()
+                cnc.CnC(data).process()
             except Exception as exception:
                 data["status"] = "Error"
                 data["error"] = str(exception)

@@ -20,6 +20,7 @@ import flask_restful
 import jinja2
 import opengui
 import overscore
+import yaes
 
 FORGE = {
     "name": "forge",
@@ -244,8 +245,9 @@ class CnC(flask_restful.Resource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.env = jinja2.Environment(keep_trailing_newline=True)
-        self.env.globals.update(port=self.port)
+        env = jinja2.Environment(keep_trailing_newline=True)
+        env.globals.update(port=self.port)
+        self.engine = yaes.Engine(env)
 
     @staticmethod
     def port(name):
@@ -260,90 +262,15 @@ class CnC(flask_restful.Resource):
 
         return int(f"{ord(words[0][0])}{ord(words[1][0])}")
 
-    def values(self, fields):
-        """
-        Gets the current values from the fields so far
-        """
-
-        values = {}
-
-        for field in fields:
-            if field.value is None and field.default is not None:
-                values[field.name] = field.default
-            else:
-                values[field.name] = field.value
-
-        return values
-
-    def ready(self, fields, field):
-        """
-        Determines whether the field is ready, requirements wise
-        """
-
-        requires = field.get("requires", [])
-
-        if isinstance(requires, str):
-            requires = [requires]
-
-        for require in requires:
-            if require not in fields or not fields[require].validate(store=False):
-                return False
-
-        return True
-
-    def satisfied(self, field):
-        """
-        Determines whether the conditions for a field are satisfied
-        """
-
-        if "condition" in field:
-
-            if isinstance(field["condition"], bool):
-                return field["condition"]
-
-            if field["condition"] != "True":
-                return False
-
-        return True
-
-    def render(self, template, values):
-        """
-        Gets a value of API
-        """
-
-        if isinstance(template, str):
-
-            if len(template) > 4 and template[:2] == "{?" and template[-2:] == "?}":
-                return self.env.from_string("{{%s}}" % template[2:-3]).render(**values) == "True"
-
-            if len(template) > 4 and template[:2] == "{[" and template[-2:] == "]}":
-                return overscore.get(values, template[2:-3].strip())
-
-            return self.env.from_string(template).render(**values)
-
-        if isinstance(template, dict):
-
-            return {self.render(key, values): self.render(value, values) for key, value in template.items()}
-
-        if isinstance(template, list):
-            return [self.render(value, values) for value in template]
-
-        return template
-
-    def field(self, fields, field):
+    def field(self, fields, field, values):
         """
         Adds a field if requires and conditions are satsified
         """
 
-        values = self.values(fields)
+        field = self.engine.transform(field, values)
 
-        if not self.ready(fields, field):
-            return
-
-        field = self.render(field, values)
-
-        if not self.satisfied(field):
-            return
+        if field["name"] in RESERVED:
+            raise Exception(f"field name '{field['name']}' is reserved")
 
         if field["name"] not in fields:
             field.setdefault("default", None)
@@ -367,6 +294,10 @@ class CnC(flask_restful.Resource):
         if "craft" not in forge.get("input", {}):
             fields.append(CRAFT)
 
+        if os.path.exists("/opt/service/forge/fields.yaml"):
+            with open("/opt/service/forge/fields.yaml", "r") as fields_file:
+                fields.extend(yaml.safe_load(fields_file).get("fields", []))
+
         fields = opengui.Fields(
             values=values,
             fields=fields,
@@ -375,14 +306,8 @@ class CnC(flask_restful.Resource):
 
         fields["forge"].description = forge["description"]
 
-        if os.path.exists("/opt/service/forge/fields.yaml"):
-            with open("/opt/service/forge/fields.yaml", "r") as fields_file:
-                fields.extend(yaml.safe_load(fields_file).get("fields", []))
-
-        for field in forge.get("input", {}).get("fields", []):
-            if field["name"] in RESERVED:
-                raise Exception(f"field name '{field['name']}' is reserved")
-            self.field(fields, field)
+        for field, each_values in self.engine.each(forge.get("input", {}).get("fields", []), values):
+            self.field(fields, field, each_values)
 
         return fields
 
