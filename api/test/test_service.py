@@ -560,121 +560,12 @@ class TestCnC(TestRestful):
 
         cnc = service.CnC()
 
-        self.assertIn("port", cnc.env.globals)
+        self.assertIn("port", cnc.engine.env.globals)
 
     def test_port(self):
 
         self.assertEqual(service.CnC.port("a-b"), 6566)
         self.assertEqual(service.CnC.port("ac"), 6567)
-
-    def test_values(self):
-
-        cnc = service.CnC()
-
-        fields = opengui.Fields(fields=[
-            {"name": "none"},
-            {"name": "some", "default": "fun"}
-        ])
-
-        self.assertEqual(cnc.values(fields), {
-            "none": None,
-            "some": "fun"
-        })
-
-    def test_ready(self):
-
-        cnc = service.CnC()
-
-        fields = opengui.Fields()
-
-        # missing
-
-        field = {
-            "name": "moar",
-            "requires": "some"
-        }
-
-        self.assertFalse(cnc.ready(fields, field))
-
-        # invalid
-
-        fields.append({
-            "name": "some",
-            "required": True
-        })
-
-        self.assertFalse(cnc.ready(fields, field))
-
-        # requirement met
-
-        fields["some"].value = "fun"
-
-        self.assertTrue(cnc.ready(fields, field))
-
-    def test_satisfied(self):
-
-        cnc = service.CnC()
-
-        # unsatisfied
-
-        field = {
-            "name": "happy",
-            "condition": "False"
-        }
-
-        self.assertFalse(cnc.satisfied(field))
-
-        field = {
-            "name": "happy",
-            "condition": False,
-        }
-
-        self.assertFalse(cnc.satisfied(field))
-
-        # satisfied
-
-        field = {
-            "name": "happy",
-            "condition": "True"
-        }
-
-        self.assertTrue(cnc.satisfied(field))
-
-        field = {
-            "name": "happy",
-            "condition": True,
-        }
-
-        self.assertTrue(cnc.satisfied(field))
-
-    def test_render(self):
-
-        cnc = service.CnC()
-
-        self.assertEqual(cnc.render(
-            {
-                "{{ people }}": [
-                    "{{ stuff }}",
-                    True,
-                    "{? 1 == 0 ?}",
-                    "{? 1 == 1 ?}"
-                ],
-                "thingies": "{[ things ]}"
-            },
-            {
-                "people": "stuff",
-                "stuff": "things",
-                "things": [1, 2, 3]
-            }
-        ), {
-            "stuff": [
-                "things",
-                True,
-                False,
-                True
-            ],
-            "thingies": [1, 2, 3]
-        })
 
     @unittest.mock.patch.dict(service.Options.creds, {
         "default": {
@@ -689,33 +580,15 @@ class TestCnC(TestRestful):
 
         fields = opengui.Fields(values={"moar": "lees"})
 
-        # clear
+        # reserved
 
         field = {
-            "name": "moar",
-            "requires": "some"
+            "name": "code"
         }
 
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 0)
-
-        field = {
-            "name": "moar",
-            "condition": False
-        }
-
-        cnc.field(fields, field)
-
-        self.assertEqual(len(fields), 0)
+        self.assertRaisesRegex(Exception, "field name 'code' is reserved", cnc.field, fields, field, {})
 
         # default
-
-        fields.append({
-            "name": "some",
-            "required": True,
-            "value": "fun"
-        })
 
         field = {
             "name": "happy",
@@ -723,9 +596,9 @@ class TestCnC(TestRestful):
             "requires": "some"
         }
 
-        cnc.field(fields, field)
+        cnc.field(fields, field, {"some": "fun"})
 
-        self.assertEqual(len(fields), 2)
+        self.assertEqual(len(fields), 1)
         self.assertEqual(fields["happy"].default, "7085 bone")
 
         # update
@@ -736,9 +609,9 @@ class TestCnC(TestRestful):
             "requires": "some"
         }
 
-        cnc.field(fields, field)
+        cnc.field(fields, field, {"some": "fun"})
 
-        self.assertEqual(len(fields), 2)
+        self.assertEqual(len(fields), 1)
         self.assertEqual(fields["happy"].default, "7085 bone")
         self.assertEqual(fields["happy"].options, [1, 2, 3])
 
@@ -770,9 +643,9 @@ class TestCnC(TestRestful):
             }
         }
 
-        cnc.field(fields, field)
+        cnc.field(fields, field, {"some": "fun"})
 
-        self.assertEqual(len(fields), 3)
+        self.assertEqual(len(fields), 2)
         self.assertEqual(fields["friend"].options, [1, 2, 3])
         self.assertEqual(fields["friend"].content['titles'], {
             1: "one",
@@ -891,22 +764,6 @@ class TestCnC(TestRestful):
                 "value":"thing"
             }
         ])
-
-        # reserved
-
-        forge = {
-            "id": "here",
-            "description": "Here",
-            "input": {
-                "fields": [
-                    {
-                        "name": "code"
-                    }
-                ]
-            }
-        }
-
-        self.assertRaisesRegex(Exception, "field name 'code' is reserved", cnc.fields, forge, {})
 
     @unittest.mock.patch("service.Forge.forge")
     @unittest.mock.patch("service.Forge.forges")

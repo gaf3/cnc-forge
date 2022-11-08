@@ -63,7 +63,6 @@ class TestService(unittest.TestCase):
         self.assertEqual(daemon.sleep, 7)
 
         self.assertEqual(daemon.redis.host, "redis.cnc-forge")
-        self.assertTrue(daemon.env.keep_trailing_newline)
 
         mock_github.assert_called_once_with()
 
