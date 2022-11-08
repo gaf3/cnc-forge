@@ -87,6 +87,9 @@ class CnC:
         Retrieves the content of a source file
         """
 
+        if isinstance(content['source'], dict):
+            return content['source']['value']
+
         source = os.path.abspath(f"{self.base()}/source/{content['source']}")
 
         if not source.startswith(f"{self.base()}/source"):
@@ -285,7 +288,7 @@ class CnC:
         elif "yaml" in content:
             destination = self.yaml(source, self.destination(content), self.engine.transform(content["yaml"], values), remove)
         else:
-            mode = True
+            mode = isinstance(content['source'], str)
             destination = source
 
         self.destination(content, destination)
@@ -316,7 +319,7 @@ class CnC:
 
         # If source is a directory
 
-        if os.path.isdir(self.source(content, path=True)):
+        if isinstance(content['source'], str) and os.path.isdir(self.source(content, path=True)):
 
             self.directory(content, values)
 
@@ -346,16 +349,22 @@ class CnC:
 
         content["source"] = self.engine.transform(content.get("source", content.get("destination")), values)
 
-        if content["source"] == "/":
-            sources = [""]
+        if isinstance(content["source"], dict):
+
+            sources = [content["source"]]
+
         else:
 
-            path = self.source(content, path=True)
-
-            if '*' in path or os.path.isdir(path):
-                sources = [self.relative(source) for source in glob.glob(path)]
+            if content["source"] == "/":
+                sources = [""]
             else:
-                sources = [self.relative(path)]
+
+                path = self.source(content, path=True)
+
+                if '*' in path or os.path.isdir(path):
+                    sources = [self.relative(source) for source in glob.glob(path)]
+                else:
+                    sources = [self.relative(path)]
 
         # Go through the source as glob, transforming destination accordingly, assuming source if missing
 

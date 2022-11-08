@@ -46,6 +46,8 @@ class TestCnC(unittest.TestCase):
     @unittest.mock.patch("cnc.open", create=True)
     def test_source(self, mock_open):
 
+        self.assertEqual(self.cnc.source({"source": {"value": "yep"}}), "yep")
+
         self.assertRaisesRegex(Exception, "invalid path: ..", self.cnc.source, {"source": ".."})
 
         self.assertEqual(self.cnc.source({"source": "stuff"}, path=True), "/opt/service/cnc/sweat/source/stuff")
@@ -472,7 +474,36 @@ class TestCnC(unittest.TestCase):
 
         mock_write.write.assert_called_once_with('here:\n- yep\n')
 
-        # Transform
+        # Value
+
+        mock_write = unittest.mock.mock_open().return_value
+
+        mock_open.side_effect = [
+            mock_write
+        ]
+
+        mock_stat.return_value.st_mode = "ala"
+
+        content = {
+            "source": {
+                "value": "hey"
+            },
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.file(content, {"sure": "yep"})
+
+        mock_write.write.assert_called_once_with('hey')
+
+        mock_stat.assert_not_called()
+
+        mock_mode.assert_not_called()
+
+        # Mode
 
         mock_write = unittest.mock.mock_open().return_value
 
@@ -674,6 +705,32 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.craft.assert_called_with({
             "source": "a/b/c",
+            "destination": "a/b/d",
+            "include": ["i"],
+            "exclude": ["j"],
+            "preserve": ["k"],
+            "transform": ["l"]
+        }, {"start": "a/b"})
+
+        # dict soure
+
+        content = {
+            "source": {
+                "value": "template"
+            },
+            "destination": "{{ start }}/d",
+            "include": ["i"],
+            "exclude": ["j"],
+            "preserve": ["k"],
+            "transform": ["l"]
+        }
+
+        self.cnc.content(content, {"start": "a/b"})
+
+        self.cnc.craft.assert_called_with({
+            "source": {
+                "value": "template"
+            },
             "destination": "a/b/d",
             "include": ["i"],
             "exclude": ["j"],
