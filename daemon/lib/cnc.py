@@ -5,7 +5,6 @@ Module for CnC
 # pylint: disable=too-many-public-methods,inconsistent-return-statements
 
 import os
-import copy
 import glob
 import json
 import yaml
