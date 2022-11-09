@@ -105,8 +105,8 @@ class GitHub:
             self.data.setdefault("name", name)
             self.data.setdefault("path", f"{self.data.get('org') or self.data['user']}/{name}")
 
-        if "branch" not in self.data and self.data["path"] in self.cnc["output"].get("github", {}).get("branches", {}):
-            self.data["branch"] = self.cnc["output"]["github"]["branches"][self.data["path"]]
+        if "branch" not in self.data and self.data["path"] in self.cnc.data["output"].get("github", {}).get("branches", {}):
+            self.data["branch"] = self.cnc.data["output"]["github"]["branches"][self.data["path"]]
 
         if "hook" in self.data:
 
@@ -114,6 +114,13 @@ class GitHub:
                 self.data["hook"] = [self.data["hook"]]
 
             self.data["hook"] = [{"url": hook} if isinstance(hook, str) else hook for hook in self.data["hook"]]
+
+        if "comment" in self.data:
+
+            if isinstance(self.data["comment"], str):
+                self.data["comment"] = [self.data["comment"]]
+
+            self.data["comment"] = [{"body": comment} if isinstance(comment, str) else comment for comment in self.data["comment"]]
 
     def request(self, method, path, params=None, json=None):
         """
@@ -248,6 +255,22 @@ class GitHub:
 
         self.data["url"] = self.request("POST", f"repos/{self.data['path']}/pulls", json=create)["html_url"]
 
+    def comment(self):
+        """
+        Ensure one or more comment are on the pull_request
+        """
+
+        number = self.data["url"].rsplit("/", 1)[-1]
+
+        exists = [comment["body"] for comment in self.iterate(f"repos/{self.data['path']}/issues/{number}/comments")]
+
+        for comment in self.data.get("comment", []):
+
+            if comment['body'] in exists:
+                continue
+
+            self.request("POST", f"repos/{self.data['path']}/issues/{number}/comments", json=comment)
+
     def change(self):
         """
         Clones a repo for a change block
@@ -347,5 +370,6 @@ class GitHub:
         # Make sure there's a pull request
 
         self.pull_request()
+        self.comment()
 
         self.cnc.link(self.data['url'])
