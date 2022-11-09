@@ -105,6 +105,9 @@ class GitHub:
             self.data.setdefault("name", name)
             self.data.setdefault("path", f"{self.data.get('org') or self.data['user']}/{name}")
 
+        if "branch" not in self.data and self.data["path"] in self.cnc["output"].get("github", {}).get("branches", {}):
+            self.data["branch"] = self.cnc["output"]["github"]["branches"][self.data["path"]]
+
         if "hook" in self.data:
 
             if isinstance(self.data["hook"], str):

@@ -20,7 +20,7 @@ class TestGitHub(unittest.TestCase):
     })
     def setUp(self):
 
-        self.github = github.GitHub("me", {"repo": "git.com"})
+        self.github = github.GitHub({"output": {}}, {"repo": "git.com"})
         self.github.api = unittest.mock.MagicMock()
 
     @unittest.mock.patch.dict(github.GitHub.creds, {
@@ -83,9 +83,19 @@ class TestGitHub(unittest.TestCase):
     })
     def test___init__(self):
 
-        init = github.GitHub("me", {"repo": "git.com"})
+        cnc = {
+            "output": {
+                "github": {
+                    "branches": {
+                        "arcade/git.com": "tree"
+                    }
+                }
+            }
+        }
 
-        self.assertEqual(init.cnc, "me")
+        init = github.GitHub(cnc, {"repo": "git.com"})
+
+        self.assertEqual(init.cnc, cnc)
         self.assertEqual(init.user, "arcade")
         self.assertEqual(init.host, "most")
         self.assertEqual(init.url, "curl")
@@ -96,10 +106,11 @@ class TestGitHub(unittest.TestCase):
             "repo": "git.com",
             "name": "git.com",
             "user": "arcade",
-            "path": "arcade/git.com"
+            "path": "arcade/git.com",
+            "branch": "tree"
         })
 
-        init = github.GitHub("me", {
+        init = github.GitHub(cnc, {
             "repo": "anization/git.com",
             "hook": "captain"
         })
