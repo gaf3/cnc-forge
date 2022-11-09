@@ -20,7 +20,10 @@ class TestGitHub(unittest.TestCase):
     })
     def setUp(self):
 
-        self.github = github.GitHub({"output": {}}, {"repo": "git.com"})
+        cnc = unittest.mock.MagicMock()
+        cnc.data = {"output": {}}
+
+        self.github = github.GitHub(cnc, {"repo": "git.com"})
         self.github.api = unittest.mock.MagicMock()
 
     @unittest.mock.patch.dict(github.GitHub.creds, {
@@ -83,7 +86,8 @@ class TestGitHub(unittest.TestCase):
     })
     def test___init__(self):
 
-        cnc = {
+        cnc = unittest.mock.MagicMock()
+        cnc.data = {
             "output": {
                 "github": {
                     "branches": {
@@ -112,7 +116,8 @@ class TestGitHub(unittest.TestCase):
 
         init = github.GitHub(cnc, {
             "repo": "anization/git.com",
-            "hook": "captain"
+            "hook": "captain",
+            "comment": "smead"
         })
 
         self.assertEqual(init.data, {
@@ -124,6 +129,11 @@ class TestGitHub(unittest.TestCase):
             "hook": [
                 {
                     "url": "captain"
+                },
+            ],
+            "comment": [
+                {
+                    "body": "smead"
                 }
             ]
         })
@@ -433,6 +443,29 @@ class TestGitHub(unittest.TestCase):
             "title": "heavyweight"
         })
 
+    def test_comment(self):
+
+        self.github.data = {
+            "path": "my/stuff",
+            "url": "pr/7",
+            "comment": [
+                {"body": "here"},
+                {"body": "there"}
+            ]
+        }
+
+        self.github.iterate = unittest.mock.MagicMock(return_value=[{
+            "body": "here"
+        }])
+
+        self.github.request = unittest.mock.MagicMock()
+
+        self.github.comment()
+
+        self.github.request.assert_called_with("POST", "repos/my/stuff/issues/7/comments", json={
+            "body": "there"
+        })
+
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("shutil.rmtree")
     @unittest.mock.patch("builtins.print")
@@ -574,6 +607,7 @@ class TestGitHub(unittest.TestCase):
         self.github.cnc = unittest.mock.MagicMock()
         self.github.link = unittest.mock.MagicMock()
         self.github.pull_request = unittest.mock.MagicMock()
+        self.github.comment = unittest.mock.MagicMock()
 
         self.github.cnc.data = {"id": "sweat", "action": "test"}
         self.github.cnc.base.return_value = "noise"
