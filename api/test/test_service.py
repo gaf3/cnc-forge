@@ -1142,6 +1142,59 @@ class TestCnC(TestRestful):
 
     def test_patch(self):
 
+        # retry
+
+        self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Created",
+            "error": "whoops",
+            "traceback": "scroll",
+            "change": "down",
+            "content": "monetized",
+            "code": "rancid"
+        })
+
+        response = self.api.patch("/cnc/funtime-here-1604275200")
+
+        result = {
+            "id": "funtime-here-1604275200",
+            "description": "Here",
+            "input": {
+                "fields": [
+                    {
+                        "name": "some"
+                    }
+                ]
+            },
+            "values": {
+                "forge": "here",
+                "craft": "funtime",
+                "some": "thing"
+            },
+            "status": "Retry"
+        }
+
+        self.assertStatusValue(response, 201, "cnc", result)
+
+        self.assertStatusValue(response, 201, "yaml", yaml.safe_dump(result))
+
+        self.assertEqual(json.loads(self.app.redis.data["/cnc/funtime-here-1604275200"]), result)
+
+        # edit
+
         self.app.redis.data["/cnc/funtime-here-1604275200"] = json.dumps({
             "id": "funtime-here-1604275200",
             "description": "Here",
@@ -1159,12 +1212,13 @@ class TestCnC(TestRestful):
             },
             "status": "Created",
             "traceback": "scroll",
+            "change": "down",
             "content": "monetized"
         })
 
-        response = self.api.patch("/cnc/funtime-here-1604275200")
+        self.api.patch("/cnc/funtime-here-1604275200", json={"save": False})
 
-        self.assertStatusValue(response, 201, "cnc", {
+        self.assertEqual(json.loads(self.app.redis.data["/cnc/funtime-here-1604275200"]), {
             "id": "funtime-here-1604275200",
             "description": "Here",
             "input": {
@@ -1179,29 +1233,27 @@ class TestCnC(TestRestful):
                 "craft": "funtime",
                 "some": "thing"
             },
+            "status": "Created",
+            "traceback": "scroll",
+            "change": "down",
+            "content": "monetized"
+        })
+
+        response = self.api.patch("/cnc/funtime-here-1604275200", json={"yaml": "a: 1"})
+
+        self.assertStatusValue(response, 201, "cnc", {
+            "a": 1,
             "status": "Retry"
         })
 
         self.assertStatusValue(response, 201, "yaml", yaml.safe_dump({
-            "id": "funtime-here-1604275200",
-            "description": "Here",
-            "input": {
-                "fields": [
-                    {
-                        "name": "some"
-                    }
-                ]
-            },
-            "values": {
-                "forge": "here",
-                "craft": "funtime",
-                "some": "thing"
-            },
+            "a": 1,
             "status": "Retry"
         }))
 
-        self.assertStatusValue(self.api.patch("/cnc/nope"), 404, "message", "cnc 'nope' not found")
+        # missing
 
+        self.assertStatusValue(self.api.patch("/cnc/nope"), 404, "message", "cnc 'nope' not found")
 
     def test_delete(self):
 

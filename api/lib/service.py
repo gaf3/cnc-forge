@@ -419,17 +419,19 @@ class CnC(flask_restful.Resource):
         if "cnc" not in retrieved:
             return retrieved
 
-        cnc = retrieved["cnc"]
+        if flask.request.data and "yaml" in (flask.request.json or {}):
+            cnc = yaml.safe_load(flask.request.json["yaml"])
+        else:
+            cnc = retrieved["cnc"]
 
         cnc["status"] = "Retry"
 
-        if "traceback" in cnc:
-            del cnc["traceback"]
+        for issue in ["error", "traceback", "content", "change", "code"]:
+            if issue in cnc:
+                del cnc[issue]
 
-        if "content" in cnc:
-            del cnc["content"]
-
-        flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
+        if not flask.request.data or (flask.request.json or {}).get("save", True):
+            flask.current_app.redis.set(f"/cnc/{id}", json.dumps(cnc), ex=86400)
 
         return {"cnc": cnc, "yaml": yaml.safe_dump(cnc, default_flow_style=False)}, 201
 
