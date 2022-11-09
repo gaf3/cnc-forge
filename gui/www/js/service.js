@@ -106,7 +106,7 @@ DRApp.controller("Base",null,{
         if (this.it.errors && this.it.errors.length) {
             this.application.render(this.it);
         } else {
-            this.application.go("cnc_retrieve", this.rest("POST", "api/cnc/" + DRApp.current.path.id, request)["cnc"]["id"]);
+            this.application.go("cnc_retrieve", this.rest("POST", "api/cnc/" + DRApp.current.path.id, request).cnc.id);
         }
     },
     cnc_timer: null,
@@ -135,6 +135,18 @@ DRApp.controller("Base",null,{
         this.it = this.rest("PATCH", "api/cnc/" + DRApp.current.path.id);
         this.application.render(this.it);
     },
+    cnc_edit: function() {
+        this.it = this.rest("PATCH", "api/cnc/" + DRApp.current.path.id, {save: false});
+        this.application.render(this.it);
+    },
+    cnc_save: function() {
+        var yaml = $("#yaml").val();
+        this.rest("PATCH", "api/cnc/" + DRApp.current.path.id, {yaml: yaml});
+        this.application.go("cnc_retrieve", DRApp.current.path.id);
+    },
+    cnc_cancel: function() {
+        this.application.go("cnc_retrieve", DRApp.current.path.id);
+    },
     cnc_delete: function() {
         this.it = this.rest("DELETE", "api/cnc/" + DRApp.current.path.id);
         this.application.go("cnc_list");
@@ -154,6 +166,7 @@ DRApp.template("Forge", DRApp.load("forge"), null, DRApp.partials);
 DRApp.template("Create", DRApp.load("create"), null, DRApp.partials);
 DRApp.template("CnCs", DRApp.load("cncs"), null, DRApp.partials);
 DRApp.template("CnC", DRApp.load("cnc"), null, DRApp.partials);
+DRApp.template("Edit", DRApp.load("edit"), null, DRApp.partials);
 
 DRApp.route("home", "/", "Home", "Base");
 DRApp.route("forge_list", "/forge", "Forges", "Base", "forge_list");
@@ -161,3 +174,4 @@ DRApp.route("forge_retrieve", "/forge/{id:^.+$}", "Forge", "Base", "forge_retrie
 DRApp.route("create", "/cnc/{id:^.+$}/create", "Create", "Base", "create");
 DRApp.route("cnc_list", "/cnc", "CnCs", "Base", "cnc_list");
 DRApp.route("cnc_retrieve", "/cnc/{id:^.+$}", "CnC", "Base", "cnc_retrieve", "cnc_clear");
+DRApp.route("cnc_edit", "/cnc/{id:^.+$}/edit", "Edit", "Base", "cnc_edit");

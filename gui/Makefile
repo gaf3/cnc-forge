@@ -1,6 +1,6 @@
 ACCOUNT=gaf3
 IMAGE=cnc-forge-gui
-VERSION?=0.6.0
+VERSION?=0.6.2
 NAME=$(IMAGE)-$(ACCOUNT)
 
 .PHONY: cross build shell push install update remove reset
