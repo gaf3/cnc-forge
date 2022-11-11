@@ -1,0 +1,26 @@
+description: Test forge
+input:
+  fields:
+  - name: people
+    options:
+    - tom
+    - dick
+    - mary
+    multi: true
+    trigger: true
+  - requires: people
+    iterate:
+      person: people
+    blocks:
+    - name: "{{ person }}_name"
+    - name: "{{ person }}_age"
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      prefix: "{{ ticket }}"
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source: /

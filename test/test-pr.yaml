@@ -1,0 +1,13 @@
+description: Test forge
+output:
+  code:
+  - github:
+      repo: test-forge
+      prefix: "{{ ticket }}"
+    change:
+    - github:
+        repo: test-forge
+      content:
+      content:
+      - source: README.md
+        destination: README.pr

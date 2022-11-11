@@ -1,0 +1,16 @@
+description: Test forge
+input:
+  fields:
+  - name: binary
+    bool: true
+  - name: basic
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      prefix: "{{ ticket }}"
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source: /

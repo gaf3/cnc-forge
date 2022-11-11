@@ -1,0 +1,41 @@
+description: Test forge for iteration
+input:
+  fields:
+  - name: places
+    options:
+    - here
+    - there
+    multi: True
+    trigger: True
+  - name: fronts
+    options:
+    - people
+    - stuff
+    - things
+    multi: True
+    trigger: True
+  - name: exts
+    options:
+    - fee
+    - fie
+    - foe
+    - fum
+    multi: True
+    trigger: True
+output:
+  code:
+  - github:
+      repo: "gaf3/test-forge-{{ place }}"
+      prefix: "{{ ticket }}"
+    iterate:
+      place: places
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source: README.md
+        destination: "{{ front }}.{{ ext }}"
+        condition: "{? ext != 'fum' ?}"
+        iterate:
+          front: fronts
+          ext: exts

@@ -1,0 +1,13 @@
+description: Test forge
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      prefix: "{{ ticket }}"
+    change:
+    - remove: true
+      github:
+        repo: gaf3/test-forge
+      content:
+      - source: README.md
+      - source: people

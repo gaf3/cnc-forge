@@ -1,0 +1,5 @@
+fields:
+- name: ticket
+  description: JIRA ticket associated with the task
+  default: YOLO-420
+  valid: "^[A-Z]+-[0-9}+"
