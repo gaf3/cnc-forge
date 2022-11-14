@@ -605,7 +605,7 @@ fields:
 
 Which displays as:
 
-![additional](/img/additionalpng)
+![additional](/img/additional.png)
 
 All fields specified in `fields.yaml` will appear in every forge after the `forge` and `craft` fields.
 
