@@ -640,7 +640,7 @@ input:
 
 Which displays as:
 
-![override](/img/override)
+![override](/img/override.png)
 
 The override field will be used in the id, just like the craft field typically is. If the override
 field is multi, it'll use the first selected value. If there's no values, everything will just fail.
