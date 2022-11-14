@@ -77,16 +77,15 @@ Clickin on Craft we get the form to fill out.
 The `craft` field by default is added to every forge (but can be overridden). The CnC Forge use that field
 to name the CnC it's going to create. In the case of our test forge, it'll use that field to create a new repo.
 
-Cllicking Commit (we'll go over Try and Remove later) will create a CnC and we'll go to it:
+Cllicking Commit (we'll go over Try and Remove later) will create a CnC:
 
 ![test-create](img/test-create.png)
 
-Once the CnC is complete, it'll give us a link to all the Pull Requests it created, which is just the one with
-our Test Forge:
+Once the CnC is complete, it'll give us a link to all the Pull Requests it created, which is just the one:
 
 ![test-complete](img/test-complete.png)
 
-Clicking on the PR. we can see there's one file, README.md to add and it's been transoformed by Jinja2 to
+Clicking on the PR. we can see there's one file, README.md to add and it's been transformed by Jinja2 to
 have our craft `demo-doc`:
 
 ![test-pr](img/test-pr.png)
@@ -99,11 +98,11 @@ That was done so we could checkout and commit against the repo.
 
 And that's it. It's that simple but can be far more complex.
 
-For more on how input works: [Input](/Input)
+For more on how input works: [Input](/Input.md)
 
-For more on how output works: [Output](/Output)
+For more on how output works: [Output](/Output.md)
 
-For more on how the GitHub module works: [GitHub](/GitHub)
+For more on how the GitHub module works: [GitHub](/GitHub.md)
 
 # Usage
 

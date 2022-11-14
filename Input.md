@@ -2,6 +2,36 @@
 
 The optional `input` section of a forge defines what fields and how they all work.
 
+- [fields](#fields) - Field settings
+  - [name](#name) - What to call the field and how to reference in templating
+  - [required](#required) - Make a field required
+  - [validation](#validation) - How to validation a field with a regex
+  - [trigger](#trigger) - Make the form reload if a field changes
+  - [default](#default) - Default value for a field
+  - [readonly](#readonly) - Make a field for display only
+  - [description](#description) - Describe what the field does
+  - [link](#link) - Add a helpful link or two
+  - [options](#options) - Only allow certain values via radio buttons
+  - [titles](#titles) - Give those only values their own descriptions
+  - [multi](#multi) - Allow to select multiple options with checkboxes
+  - [bool](#bool) - Have a value be only true or false with a single checkbox
+  - [style](#style) - Change the appearance of text or options
+    - [textarea](#textarea) - Make a regular text field a textarea field
+    - [select](#select) - Put option in a drop down
+    - [optional](#optional) - Have that drop down have a blank option
+  - [field.fields](#field.fields) - Fields with their own sub fields
+  - [requires](#requires) - Require other fields to have values before considering this one
+  - [templating](#templating) - Using field values in another's settings.
+  - [condition](#condition) - Display this field conditionally
+  - [iterate](#iterate) - Create multiple field based on another's selections
+  - [blocks](#blocks) - Group several fields for a single condition/iterate
+- [builtin](#builtin) - Fields that are added to every forge
+  - [forge](#forge) - Forge selected
+  - [craft](#craft) - What you're forging
+  - [additional](#additional) - Additional builtins to add to all forges
+  - [update](#update) - Updating a builtin field with different settings
+  - [override](#override) - Overriding the craft field with your own
+
 # fields
 
 Fields are defined in the `input.fields` section. For example if you wanted a text field
@@ -46,7 +76,7 @@ This is the demo example.
 
 ## required
 
-If a field must of a value, add a required:
+If a field must have a value, add a required:
 
 ```yaml
 description: An example
@@ -184,7 +214,7 @@ Which displays:
 
 ## options
 
-You can add options to a field to limit selections:
+You can add options to a field  as a list to limit selections:
 
 ```yaml
 description: An example
@@ -208,6 +238,8 @@ And be evaluated as:
     "example": 2
 }
 ```
+
+You can also pull options from an API. Check out [Options](/Options.md)
 
 ## titles
 
@@ -239,6 +271,8 @@ But evaluate the same:
     "example": 2
 }
 ```
+
+You can also pull titles from an API with options. Check out [Options](/Options.md)
 
 ## multi
 
@@ -332,7 +366,7 @@ Which displays as:
 
 ![select](/img/select.png)
 
-## optional
+### optional
 
 If you have options with a select style, you can also make the field optional:
 
@@ -355,7 +389,7 @@ Which displays as:
 
 Note the empty option.
 
-## fields
+## field.fields
 
 Fields can have fields!
 
@@ -377,16 +411,18 @@ And are evaluated accordingly:
 
 ```json
 {
-    "more": "yes",
-    "fun": "please"
+    "example": {
+        "more": "yes",
+        "fun": "please"
+    }
 }
 ```
 
 ## requires
 
 We can have fields depend on the values of other fields. But before we can do that, we
-have to make the fields we're going to use have values. DSay we wanted to have our example
-field use the fruits field. We'd specify that example requires fruits.
+have to make sure the fields we're going to use have values. Say we wanted to have our
+example field use the fruits field. We'd specify that example requires fruits.
 
 ```yaml
 description: An example
@@ -402,6 +438,34 @@ input:
   - name: example
     requires: fruits
 ```
+
+Nothing to display here, but see below how it works.
+
+## templating
+
+With the dependecies listed, we can use Jinja2 templating in all field settings.
+
+```yaml
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+    trigger: true
+  - name: example
+    requires: fruits
+    description: "describe these {{ fruits | length }} fruits"
+```
+
+And when we select fruits, the description is updated accordingly:
+
+![templating](/img/templating.png)
+
+This use of templating works in any field setting allow for some crazy dynamic behavior.
 
 ## condition
 
@@ -447,7 +511,7 @@ input:
     multi: true
     trigger: true
   - name: "{{ fruit }}_cost"
-    iteration:
+    iterate:
       fruit: fruits
 ```
 
@@ -462,7 +526,7 @@ Selecting some fruits shows matching costs:
 ## blocks
 
 If you want to apply conditions or iteration to more than one field you can group
-them with blocks and those blocks can even have conditions and iteration::
+them with blocks and those blocks can even have conditions and iteration:
 
 ```yaml
 description: An example
@@ -493,3 +557,90 @@ Selecting no fruits shows no fields:
 Selecting some fruits shows matching fields:
 
 ![blocks-some](/img/blocks-some.png)
+
+# builtin
+
+There are two fields built in: `forge` and `craft`.
+
+## forge
+
+The forge field just stores what forge you pick. It's used to generate the id.
+
+This is what it's YAML looks like:
+
+```yaml
+name: forge
+description: what to craft from
+readonly: true
+```
+
+## craft
+
+The craft field is what you're calling this run. Usually it's used for the name of a repo or a file.
+
+This is what it's YAML looks like:
+
+```yaml
+name: forge
+description: craft
+validation: ^[a-z][a-z0-9\-]{1,46}$
+required: true
+triggered: true
+```
+
+## additional
+
+You can add your own built in fields to CnC Forge deployment. Add a `fields.yaml` to the `forge/`
+Directory/ConfigMap.
+
+Here's one I always have:
+
+```yaml
+fields:
+- name: ticket
+  description: JIRA ticket associated with the task
+  default: YOLO-420
+  valid: "^[A-Z]+-[0-9}+"
+```
+
+Which displays as:
+
+![additional](/img/additionalpng)
+
+All fields specified in `fields.yaml` will appear in every forge after the `forge` and `craft` fields.
+
+## update
+
+You can update any field by adding another field with the same name. This will taken whatever settings
+you specify and update the dictionary of settings for the field with the same name:
+
+```yaml
+description: An example
+input:
+  fields:
+  - name: craft
+    description: She's crafty and just my type
+```
+
+Which displays as:
+
+![update](/img/update.png)
+
+## override
+
+You can also completely override the `input.craft` field entirely with a different field like so:
+
+```yaml
+description: An example
+input:
+  craft: example
+  fields:
+  - name: example
+```
+
+Which displays as:
+
+![override](/img/override)
+
+The override field will be used in the id, just like the craft field typically is. If the override
+field is multi, it'll use the first selected value. If there's no values, everything will just fail.
