@@ -78,7 +78,7 @@ class Options:
 
         self.session = requests.Session()
 
-        creds = copy.deepcopy(self.creds[data.get("creds", "default")])
+        creds = copy.deepcopy(self.creds.get(data.get("creds", "default"), {"verify": True}))
         creds.update(data)
 
         creds.setdefault("method", "GET")
@@ -158,6 +158,18 @@ def build():
 
 
 class Health(flask_restful.Resource):
+    """
+    Class for Health checks
+    """
+
+    def get(self):
+        """
+        Just return ok
+        """
+        return {"message": "OK"}
+
+
+class Simple(flask_restful.Resource):
     """
     Class for Health checks
     """

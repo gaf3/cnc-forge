@@ -81,5 +81,27 @@ pipeline {
                 }
             }
         }
+        stage('build options') {
+            steps {
+                dir('options') {
+                    sh 'make build'
+                }
+            }
+        }
+        stage('test options') {
+            steps {
+                dir('options') {
+                    sh 'make test'
+                }
+            }
+        }
+        stage('lint options') {
+            steps {
+                dir('options') {
+                    sh 'make lint'
+                }
+            }
+        }
+
     }
 }
