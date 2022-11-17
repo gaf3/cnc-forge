@@ -179,3 +179,18 @@ fields, but not as many as `code` and they don't do as much.
 
 If you want to grab code from a different branch than the Repo's default branch, use this field to
 specify the branch.
+
+# development
+
+One of the main aspects of developing on a forge is to have a branch on the forge Repo. While you can
+add to each `change` block you can set the default branch for a Repo at the very top of the `output`
+block like so:
+
+```yaml
+output:
+  github:
+    branches:
+      gaf3/test-forge: mybranch
+```
+
+That means any reference to the `gaf3/repo` will by default use the `mybranch` branch.

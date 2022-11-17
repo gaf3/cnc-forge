@@ -372,7 +372,7 @@ The request body will be:
 
 Note that we used a POST method.  Different API's work differently but technically GET requests aren't
 supposed to have bodies. While you can do whatever you want, I've found less headaches adapting my POST
-methods rather fighting industry standards. And yes, I've tried. Lord, Lord, I have tried.
+methods rather fighting industry standards. And yes, I've tried. Lord knows, I have tried.
 
 ## headers
 

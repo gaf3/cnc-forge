@@ -209,7 +209,7 @@ class CnC:
         if source in value and remove:
             value.remove(source)
 
-        return json.dumps(destination, indent=4)
+        return json.dumps(destination, indent=4) + "\n"
 
     @staticmethod
     def yaml(source, destination, location, remove):
