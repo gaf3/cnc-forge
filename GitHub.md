@@ -1,11 +1,33 @@
-# cnc-forge - github
+# CnC Forge - GitHub
 
 CnC Forge is currently setup to use GitHub to source code and create code.
+
+- [Setup](#Setup) - Getting started
+  - [Default](#Default) - Default credentials
+  - [Account](#Account) - Credentials for a specific account
+- [Usage](#Usage) - General usage
+  - [Universal] - Settings that apply to both `code` and `change` blocks.
+    - [creds](#creds) - Credentials to use
+    - [repo](#repo) - Full name Repo to use
+    - [name](#name) - The Repo's name
+    - [org](#org) - Org of the Repo
+    - [user](#user) - User of the Repo
+    - [path](#path) - Full path derived from above settings
+  - [code](#code) - Settings that only apply to `code.github` blocks.
+    - [prefix](#prefix) - Value to prefix the CnC id with, default for `branch` and `title`
+    - [branch](#branch) - Branch to use for the Pull Request
+    - [title](#title) - Title to use for the Pull Request
+    - [base](#base) - Base branch of the Pull Request
+    - [hook](#hook) - Webhooks to ensure on the Repo
+    - [comment](#comment) - Comments to ensure on the Pull Request
+  - [change](#change) - Settings that only apply to `change.github` blocks.
+    - [branch](#branch) - Branch to pull content from
+- [Development](#Development) - Tips and tricks while developing
 
 Right now GitHub the code repository git/API CnC Forge uses but I made everything modular
 and just haven't got around to creating a module for like GitLab or BitBucket, etc.
 
-# setup
+# Setup
 
 The CnC Forge uses one secret in the `cnc-forge` Kubernetes namespace, esoterically called `secret`.
 
@@ -16,8 +38,6 @@ All GitHub creds files are prefixed with `github_`, and each set of creds requir
 all the information it needs to interact with the account on a GitHub server. Second, and an SSH
 private key to checkout and commit code.
 
-## accounts
-
 For each GitHub account you're using make sure you have:
 - A [GitHub](https://github.com/) account that can create Repos and Pull Requests
 - A [GitHub Personal Access Token](https://github.com/settings/tokens) that can create Repos and Pull Requests
@@ -25,7 +45,7 @@ For each GitHub account you're using make sure you have:
 
 Wait, isn't that last step dangerous? Oh yes. I'm looking to harden that up but don't ever share what's generated above.
 
-## default
+## Default
 
 To create a default set of creds, credit a file called `github_default.json` like so:
 
@@ -42,18 +62,18 @@ And a file of the SSH private key called `github_default.key`. Put both in the s
 
 Whether the CnC Forge sees a `github` YAML block, it'll use these creds by default.
 
-## account
+## Account
 
 To create a set of creds for a different account, do everything you did for for `default`, pick a name like
 `other` and simply name the files `github_other.json` and `github_other.key` and put them in the same secret.
 
 Whether the CnC Forge sees a `github.creds: other` setting in a `github` YAML block, it'll use these creds.
 
-# usage
+# Usage
 
 The `github` blocks are used in blocks `code` and `change`. But there are some setting that universal to both.
 
-## universal
+## Universal
 
 ### creds
 
@@ -180,7 +200,7 @@ fields, but not as many as `code` and they don't do as much.
 If you want to grab code from a different branch than the Repo's default branch, use this field to
 specify the branch.
 
-# development
+# Development
 
 One of the main aspects of developing on a forge is to have a branch on the forge Repo. While you can
 add to each `change` block you can set the default branch for a Repo at the very top of the `output`

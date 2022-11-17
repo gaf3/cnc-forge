@@ -1,4 +1,4 @@
-# cnc-forge - output
+# CnC Forge - Output
 
 The `output` section of a forge defines what fields and how they all work.
 
@@ -687,15 +687,15 @@ Make sure your templating uses the '{? ?}` notation.
 
 This is what's in the [gaf3/test-forge](https://github.com/gaf3/test-forge) Repo:
 
-![condition-content](img/condition-content.png)
+![content](img/content.png)
 
 Running the forge like so:
 
-![condition-content-forge](img/condition-content-forge.png)
+![content-forge](img/content-forge.png)
 
 Produces the folling Pull Request:
 
-![condition-content-pr](img/condition-content-pr.png)
+![content-pr](img/content-pr.png)
 
 Notice that only `change.text` and `change.yaml` were added based on their conditions.
 
@@ -732,11 +732,11 @@ list of values to iterate over.
 
 Running the forge like so:
 
-![iterate-content-forge](img/iterate-content-forge.png)
+![iterate-forge](img/iterate-forge.png)
 
 Produces the folling Pull Request:
 
-![iterate-content-pr](img/iterate-content-pr.png)
+![iterate-pr](img/iterate-pr.png)
 
 Notice the two files being created from the selection.
 
@@ -820,14 +820,14 @@ output:
 
 This is what's in the [gaf3/test-forge](https://github.com/gaf3/test-forge) Repo:
 
-![transpose](img/content-blocks.png)
+![blocks](img/blocks.png)
 
 Running the forge like so:
 
-![content-blocks-forge](img/content-blocks-forge.png)
+![blocks-forge](img/blocks-forge.png)
 
 Produces the folling Pull Request:
 
-![content-blocks-pr](img/content-blocks-pr.png)
+![blocks-pr](img/blocks-pr.png)
 
 Notice the two files being created from the selection and their contents has the fruit name, not the craft.

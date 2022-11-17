@@ -1,11 +1,15 @@
-# cnc-forge - templating
+# CnC Forge - Templating
+
+- [File](#File) - Templating in files
+- [Output](#Output) - Templating in `output` blocks `code`, `change`, `content`
+- [Input](#Input) - Templating in `input` blocks like `field`
 
 !(templating)[img/templating.jpg]
 
 That picture pretty much sums up how templing work in the CnC Forge. Any file, any output,
 hell any input, all of them use [Jinja2](https://pypi.org/project/Jinja2/) templating.
 
-# file
+# File
 
 Any file, unless specified otherwise with a !(preserve)[Output.md#preserve] setting, is
 treated like a Jinja2 template.
@@ -26,7 +30,7 @@ like templates with the `{{}}`.
 
 Check out [Jinja2 Tempating](https://jinja.palletsprojects.com/en/3.1.x/templates/) for more.
 
-# output
+# Output
 
 Any setting in any output can also be templated.
 
@@ -51,7 +55,7 @@ name of the `README.md` file.
 
 Check out [Output](Output.md) for more.
 
-# input
+# Input
 
 Even though input fields are the source of all variables for templating, you can use templating
 with input fields as well.

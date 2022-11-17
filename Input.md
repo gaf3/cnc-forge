@@ -1,8 +1,8 @@
-# cnc-forge - input
+# CnC Forge - Input
 
 The optional `input` section of a forge defines what fields and how they all work.
 
-- [fields](#fields) - Field settings
+- [Fields](#Fields) - Field settings
   - [name](#name) - What to call the field and how to reference in templating
   - [required](#required) - Make a field required
   - [validation](#validation) - How to validation a field with a regex
@@ -19,20 +19,20 @@ The optional `input` section of a forge defines what fields and how they all wor
     - [textarea](#textarea) - Make a regular text field a textarea field
     - [select](#select) - Put option in a drop down
     - [optional](#optional) - Have that drop down have a blank option
-  - [field.fields](#field.fields) - Fields with their own sub fields
+  - [fields](#fields) - Fields with their own sub fields
   - [requires](#requires) - Require other fields to have values before considering this one
   - [templating](#templating) - Using field values in another's settings.
   - [condition](#condition) - Display this field conditionally
   - [iterate](#iterate) - Create multiple field based on another's selections
   - [blocks](#blocks) - Group several fields for a single condition/iterate
-- [builtin](#builtin) - Fields that are added to every forge
+- [BuiltIn](#BuiltIn) - Fields that are added to every forge
   - [forge](#forge) - Forge selected
   - [craft](#craft) - What you're forging
   - [additional](#additional) - Additional builtins to add to all forges
   - [update](#update) - Updating a builtin field with different settings
   - [override](#override) - Overriding the craft field with your own
 
-# fields
+# Fields
 
 Fields are defined in the `input.fields` section. For example if you wanted a text field
 named example, you'd define it like so:
@@ -389,7 +389,7 @@ Which displays as:
 
 Note the empty option.
 
-## field.fields
+## fields
 
 Fields can have fields!
 
@@ -558,7 +558,7 @@ Selecting some fruits shows matching fields:
 
 ![blocks-some](/img/blocks-some.png)
 
-# builtin
+# BuiltIn
 
 There are two fields built in: `forge` and `craft`.
 

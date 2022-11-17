@@ -1,6 +1,25 @@
-# cnc-forge - options
+# CnC Forge - Options
 
 You can retrieve both field options and even titles via API calls.
+
+- [Usage](#Usage) - Usage patterns
+  - [simple](#simple) - Minimal example
+  - [complex](#complex) - Full example
+- [Authorization](#Authorization) - Accesing protected API's
+  - [basic](#basic) - Username and Password auth
+  - [token](#token) - Token auth
+- [Settings](#Settings)
+  - [url](#url) - Base url to use
+  - [path](#path) - Path to add to base url
+  - [results](#results) - Key to access list of items
+  - [option](#option) - Key to access option value in an item
+  - [title](#title) - Key to access option value in an item
+  - [creds](#creds) - Credentials to use
+  - [verify](#verify) - TLS verrification
+  - [params](#params) - URL parameters to send
+  - [method](#method) - HTTP Method to use
+  - [body](#body) - JSON body to send
+  - [headers](#headers) - HTTP Headers to send
 
 This allows for integration across an organization, especially with like an inventory system.
 
@@ -8,7 +27,7 @@ The examples actually work if you're running locally as I've set up an extra API
 options, which is accessible internally as `options.cnc-forge` and accessible externally
 as http://localhost:36770/.
 
-# usage
+# Usage
 
 ## simple
 
@@ -91,7 +110,7 @@ Which all displays as:
 
 ![complex](img/complex.png)
 
-# authorization
+# Authorization
 
 Some API's require Authorization and Authorization requires information, usually secret information.
 Like with [GitHub](GitHub.md) options can have auth info, it just needs to be secret.
@@ -178,7 +197,7 @@ Which displays as:
 
 ![token](img/token.png)
 
-# settings
+# Settings
 
 All the fields in the `options` dict and all the fields in the `options-*.json` file are
 interchangeable. All `creds` really does is find a matching file and update whatever's in

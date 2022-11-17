@@ -1,6 +1,9 @@
-# cnc-forge - setup
+# CnC Forge - Setup
 
 The CnC Forge is a web service made to run in Kubernetes.
+
+- [Local](#Local) - Get CnC Forge running on your personal computer
+- [Production](#Production) - Get CnC Forge running on someone else's computer
 
 Make sure you have:
 - A [GitHub](https://github.com/) account that can create Repos and Pull Requests
@@ -9,7 +12,7 @@ Make sure you have:
 
 Wait, isn't that last step dangerous? Oh yes. I'm looking to harden that up but don't ever share what's generated above.
 
-## Local
+# Local
 
 This is how to run the CnC Forge locally.
 
@@ -51,7 +54,7 @@ Stopping:
 - Hit Ctrl-C where you typed `make up`
 - Type `make down`
 
-## Production
+# Production
 
 This is how to deploy the CnC Forge to a production environment where I'm assuming you have a good
 understanding of Kubernetes and Kustomize and are down with the IasC.

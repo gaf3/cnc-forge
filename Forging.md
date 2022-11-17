@@ -1,4 +1,4 @@
-# cnc-forge - forging
+# CnC Forge - Forging
 
 Forging is the process of taking a Forge and creating Pull Requests (and possibly Repos).
 
@@ -9,34 +9,34 @@ machine.
 That would be enough, but us nerds like to pretend we're Viking or Blacksmith's or sone other silly
 bullshit, so I threw "forge" on the end of it. Plus "forging" sounds cooler than "CNC'ing".
 
-# actions
+# Actions
 
 Forging has three actions: Commit, Try, and Remove.
 
 ![forging](img/forging.png)
 
-## commit
+## Commit
 
 This is the most common action. It forges the code and then commits it, making a Pull Request, and
 even Repos, Webhooks on the Repo, even comments on the Pull Request.
 
-## try
+## Try
 
 This is mainly used for development. It forges the code but doesn't commit it, leaving it instead in
 the `cnc` directory. Check out [Development](Development.md) for more.
 
-## remove
+## Remove
 
 This is the least common action. In fact, at the tine of this writing, I've only used it in testing.
 What this does is reverse a forge by setting `remove: true` all the way down to the `output`. So where
 it added a file, it'll remove that file. Where it added a value to an array in a file, it'll remove
 the value from the array.
 
-# usage
+# Usage
 
 All these actions came about as how the CnC Forge evovled over time.
 
-## services
+## Services
 
 The CnC Forge earliest predecessors were used to create Services. Whatever pattern we were using
 at the time, I created a template Repo or two. You clone a Repo, run a mass search and replace
@@ -46,7 +46,7 @@ Later, with the CnC Forges more recent predecessor known as the svc-forge, that 
 Repos. Again, this was mainly used to create new Repos from scratch and only for services, which the
 CnC Forge is still absolutely great for.
 
-## standards
+## Standards
 
 One of the first side effects noticed from early predecessorsn that once people started using the
 process, everyone's services started looking pretty much the such at the base. I realized that we
@@ -55,7 +55,7 @@ way? That's fine and have fun creating Kubernetes YAML from sratch and REALLY ma
 your Terraform state locations. But if you want to get right to writing code, use our process and
 everyone wins.
 
-## iasc
+## IasC
 
 These days I use the CnC Forge more for Infrastructure as Code more than anything else. I've been
 working in some flavor of SRE for the better part of 5 years. More recently, I've become a proponent
@@ -72,7 +72,7 @@ automatically create CICD pipelines with Jenkins, GitHub actions, or ArgoCD. The
 changes to files, whether text, JSON, or YAML, adding to lists etc, all have made for a very smooth
 process of creating services.
 
-# integration
+# Integration
 
 Now that the CnC Forge has the ability to remove files and undo forging, I'm using it to maintain
 Service and Infra. Part of IasC is adding resources to an Inventory service. With [Options](Options.md)
@@ -87,7 +87,7 @@ Second, if I want to make a mass change to existing Infra Repos, I can have the 
 the relevant resources to a checkboxes field (options and multi) swap out the craft field for that
 multi select one, and make Pull Requests on dozens of Repos. Honestly, it's pretty great.
 
-## gitops
+## GitOps
 
 But it can be better. I want to be able to have all those Pull Requests automatically run. The pattern
 I've liked in the past is to make a Pull Request that tells me what will happen, then type like
