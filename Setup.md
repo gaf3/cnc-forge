@@ -2,8 +2,8 @@
 
 The CnC Forge is a web service made to run in Kubernetes.
 
-- [Local](#Local) - Get CnC Forge running on your personal computer
-- [Production](#Production) - Get CnC Forge running on someone else's computer
+- [Local](#Local) - Get CnC Forge running on your computer
+- [Production](#Production) - Get CnC Forge running in Production (someone else's computer)
 
 Make sure you have:
 - A [GitHub](https://github.com/) account that can create Repos and Pull Requests
@@ -16,7 +16,7 @@ Wait, isn't that last step dangerous? Oh yes. I'm looking to harden that up but 
 
 This is how to run the CnC Forge locally.
 
-I've only tested this on a Mac but it should work with Linux, if with a little finangling. Window? Um, good luck everyone!
+I've only tested this on a Mac but it should work with Linux, if with a little finangling. Windows? Um, good luck everyone!
 
 Make sure you have installed:
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
@@ -57,7 +57,7 @@ Stopping:
 # Production
 
 This is how to deploy the CnC Forge to a production environment where I'm assuming you have a good
-understanding of Kubernetes and Kustomize and are down with the IasC.
+understanding of Kubernetes and Kustomize and are down with IasC (ya you know me).
 
 The CnC Fotge consists of 3 microservices, api, daemon, gui, and a Redis instance. Each has a directory in this Repo with
 a `kubernetes\base` directory inside that.

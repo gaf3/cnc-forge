@@ -5,14 +5,14 @@ The optional `input` section of a forge defines what fields and how they all wor
 - [Fields](#Fields) - Field settings
   - [name](#name) - What to call the field and how to reference in templating
   - [required](#required) - Make a field required
-  - [validation](#validation) - How to validation a field with a regex
+  - [validation](#validation) - How to validate a field with a regex
   - [trigger](#trigger) - Make the form reload if a field changes
   - [default](#default) - Default value for a field
-  - [readonly](#readonly) - Make a field for display only
+  - [readonly](#readonly) - Only display a field's value
   - [description](#description) - Describe what the field does
   - [link](#link) - Add a helpful link or two
   - [options](#options) - Only allow certain values via radio buttons
-  - [titles](#titles) - Give those only values their own descriptions
+  - [titles](#titles) - Give those options their own descriptions
   - [multi](#multi) - Allow to select multiple options with checkboxes
   - [bool](#bool) - Have a value be only true or false with a single checkbox
   - [style](#style) - Change the appearance of text or options
@@ -26,11 +26,11 @@ The optional `input` section of a forge defines what fields and how they all wor
   - [iterate](#iterate) - Create multiple field based on another's selections
   - [blocks](#blocks) - Group several fields for a single condition/iterate
 - [BuiltIn](#BuiltIn) - Fields that are added to every forge
-  - [forge](#forge) - Forge selected
-  - [craft](#craft) - What you're forging
+  - [forge](#forge) - The Forge selected
+  - [craft](#craft) - What you're creating
   - [additional](#additional) - Additional builtins to add to all forges
   - [update](#update) - Updating a builtin field with different settings
-  - [override](#override) - Overriding the craft field with your own
+  - [override](#override) - Overriding the craft field with your own field
 
 # Fields
 
@@ -122,8 +122,8 @@ input:
 When the user changes that field, the field values will be sent to API and re-validated, updating the page
 if the issue has been fixed.
 
-This isn't required, the same validation check will be performed when you try to Commit, but it does make for
-a better user experience.
+This isn't required, the same validation check will be performed when you try to Commit, but it does make
+for better UX.
 
 ## default
 
@@ -143,7 +143,7 @@ And it starts off with that value:
 
 ## readonly
 
-If you want a value force you can use readonly with default like so:
+If you only want to display a value, you can use readonly only like so:
 
 ```yaml
 description: An example
@@ -158,7 +158,7 @@ And it stays with that value:
 
 ![readonly](/img/readonly.png)
 
-The forge value at the top works this way.
+The builtin `forge` field at the top works this way.
 
 ## description
 
@@ -194,7 +194,7 @@ Which displays:
 
 ![link](/img/link.png)
 
-Or it can be an array of links, with the name to display even target to open in (defaults to _b;ank):
+Or it can be an array of links, with the name to display, even target to open in (defaults to _blank):
 
 ```yaml
 description: An example
@@ -239,7 +239,7 @@ And be evaluated as:
 }
 ```
 
-You can also pull options from an API. Check out [Options](/Options.md)
+You can also pull options from an API. Check out [Options](/Options.md) for more.
 
 ## titles
 
@@ -272,7 +272,7 @@ But evaluate the same:
 }
 ```
 
-You can also pull titles from an API with options. Check out [Options](/Options.md)
+You can also pull titles from an API with options. Check out [Options](/Options.md) for more,
 
 ## multi
 
@@ -348,7 +348,7 @@ Which displays as:
 
 ### select
 
-If you want options to appear in select element:
+If you want options to appear as a drop down:
 
 ```yaml
 description: An example
@@ -465,7 +465,8 @@ And when we select fruits, the description is updated accordingly:
 
 ![templating](/img/templating.png)
 
-This use of templating works in any field setting allow for some crazy dynamic behavior.
+This use of templating works in any field setting allow for some crazy dynamic behavior. Check
+out [Templating](Templating.md) for more.
 
 ## condition
 
@@ -497,7 +498,7 @@ When apply is selected, example does show:
 
 ## iterate
 
-You can also use field to create other fields through iteration:
+You can also use a field to create other fields through iteration:
 
 ```yaml
 description: An example
@@ -585,7 +586,7 @@ name: forge
 description: craft
 validation: ^[a-z][a-z0-9\-]{1,46}$
 required: true
-triggered: true
+trigger: true
 ```
 
 ## additional
@@ -628,7 +629,7 @@ Which displays as:
 
 ## override
 
-You can also completely override the `input.craft` field entirely with a different field like so:
+You can also completely override the `craft` field entirely with a different field like so:
 
 ```yaml
 description: An example
@@ -643,4 +644,5 @@ Which displays as:
 ![override](/img/override.png)
 
 The override field will be used in the id, just like the craft field typically is. If the override
-field is multi, it'll use the first selected value. If there's no values, everything will just fail.
+field is multi, it'll use the first selected value. If there's no values, everything will just fail
+AND U SHOLD FEEL TEH ASHAME.

@@ -6,7 +6,7 @@ CnC Forge is currently setup to use GitHub to source code and create code.
   - [Default](#Default) - Default credentials
   - [Account](#Account) - Credentials for a specific account
 - [Usage](#Usage) - General usage
-  - [Universal] - Settings that apply to both `code` and `change` blocks.
+  - [Universal](#Universal) - Settings that apply to both `code` and `change` blocks.
     - [creds](#creds) - Credentials to use
     - [repo](#repo) - Full name Repo to use
     - [name](#name) - The Repo's name
@@ -18,14 +18,14 @@ CnC Forge is currently setup to use GitHub to source code and create code.
     - [branch](#branch) - Branch to use for the Pull Request
     - [title](#title) - Title to use for the Pull Request
     - [base](#base) - Base branch of the Pull Request
-    - [hook](#hook) - Webhooks to ensure on the Repo
-    - [comment](#comment) - Comments to ensure on the Pull Request
+    - [hook](#hook) - Webhook(s) to ensure on the Repo
+    - [comment](#comment) - Comment(s) to ensure on the Pull Request
   - [change](#change) - Settings that only apply to `change.github` blocks.
     - [branch](#branch) - Branch to pull content from
 - [Development](#Development) - Tips and tricks while developing
 
-Right now GitHub the code repository git/API CnC Forge uses but I made everything modular
-and just haven't got around to creating a module for like GitLab or BitBucket, etc.
+Right now CnC Forge uses GitHub for git/API but I made everything modular and just haven't
+got around to creating a module for like GitLab or BitBucket, etc.
 
 # Setup
 
@@ -35,7 +35,7 @@ The CnC Forge interacts with GitHub two ways. First, it uses the GitHub API to q
 and Pull Requests. Second, it uses git and SSH Keys to check out and commit code.
 
 All GitHub creds files are prefixed with `github_`, and each set of creds requires two files. First,
-all the information it needs to interact with the account on a GitHub server. Second, and an SSH
+all the information it needs to interact with the account on a GitHub server. Second, an SSH
 private key to checkout and commit code.
 
 For each GitHub account you're using make sure you have:
@@ -58,9 +58,9 @@ To create a default set of creds, credit a file called `github_default.json` lik
 }
 ```
 
-And a file of the SSH private key called `github_default.key`. Put both in the secret for CnC Forge.
+Then create a file of the SSH private key called `github_default.key`. Put both in the secret for CnC Forge.
 
-Whether the CnC Forge sees a `github` YAML block, it'll use these creds by default.
+When the CnC Forge sees a `github` YAML block, it'll use these creds by default.
 
 ## Account
 
@@ -71,7 +71,7 @@ Whether the CnC Forge sees a `github.creds: other` setting in a `github` YAML bl
 
 # Usage
 
-The `github` blocks are used in blocks `code` and `change`. But there are some setting that universal to both.
+The `github` blocks are used in blocks `code` and `change`. But some settings are universal to both.
 
 ## Universal
 
@@ -85,7 +85,7 @@ This is like the name of the repo but more shorthand.
 
 If there's a `/` in the value, it's assume the org is proceeding the `/`.
 
-If there's no `/` in the value, it's assumed the repo belongs to the user in teh creds.
+If there's no `/` in the value, it's assumed the repo belongs to the user in the creds.
 
 This field is never used by processing. It's used to figure our fields like `name`, `path`, etc.
 
@@ -129,13 +129,13 @@ if `prefix` is set and just `id` if `prefix` is not.
 
 ### base
 
-(optional) This is the branch to use as the base branchof the Pull Request. If not set it'll use the
+(optional) This is the branch to use as the base branch of the Pull Request. If not set it'll use the
 Repo's default branch.
 
 ### hook
 
-(optional) - Webhook(s) to ensure on the Repo. This is useful for CICD (which is what I used the CnC Forge all
-the time).
+(optional) - Webhook(s) to ensure on the Repo. This is useful for CICD (which is what I use the
+CnC Forge all the time).
 
 It's pretty flexible. It can be a str, a dict, or list of str/dict.
 
@@ -185,14 +185,14 @@ github:
   - body: /approve
 ```
 
-Whatever is in that dict is sent to the GitHub API as teh payload, so you can add fields based on the
+Whatever is in that dict is sent to the GitHub API as t=he payload, so you can add fields based on the
 [API Documentation](https://docs.github.com/en/rest/issues/comments#create-an-issue-comment)
 
 Note: This is done only during the "Commit" action. "Try" doesn't do anything with it.
 
 ## change
 
-In a `change` block, a `github` block tells the CnC Forge how to grab code to make changes. So it has addtional
+In a `change` block, a `github` block tells the CnC Forge how to grab content. So it has addtional
 fields, but not as many as `code` and they don't do as much.
 
 ### branch
@@ -203,8 +203,8 @@ specify the branch.
 # Development
 
 One of the main aspects of developing on a forge is to have a branch on the forge Repo. While you can
-add to each `change` block you can set the default branch for a Repo at the very top of the `output`
-block like so:
+add to each `change` block, it's easier to set the default branch for a Repo at the very top of the
+`output` block like so:
 
 ```yaml
 output:
@@ -214,3 +214,7 @@ output:
 ```
 
 That means any reference to the `gaf3/repo` will by default use the `mybranch` branch.
+
+I do this because I'm more likely to miss a bunch of little places to change vs. a single spot. That
+way I'm more likely to release a updated forge without it looking for a developing branch I've long
+since deleted when I merged a Pull Request.

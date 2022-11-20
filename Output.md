@@ -1,25 +1,26 @@
 # CnC Forge - Output
 
-The `output` section of a forge defines what fields and how they all work.
+The `output` section of a forge defines Pull Requests to create and even Repos to create
+and what other Repos to create from.
 
-- [code](#code) - Making a Pull Request
-- [change](#change) - Pulling code from another Repo for changes
-- [content](#content) - Adding content to a Pull Request
-  - [source](#source) - Specifying the content source
+- [code](#code) - Make a Pull Request (and create Repo if doens't exist)
+- [change](#change) - Repo to grab content from for teh Pull Request
+- [content](#content) - Add content to a Pull Request
+  - [source](#source) - Specify the content source
     - [file](#file) - Sourcing a file
     - [directory](#directory) - Sourcing a directory
-    - [glob](#glob) - Sourcing files and direcotries with *
+    - [glob](#glob) - Sourcing files and directories with *
     - [value](#value) - Sourcing a raw value without a file
-  - [destination](#destination) - Specifying the content destination
-  - [exclude](#exclude) - Excluding files and directories from a glob source
-  - [include](#include) - Including files and directories that were excluded from a glob source
-  - [preserve](#preserve) - Preserving (not transforming) files and directories from a glob source
-  - [transform](#transform) - Transforming files and directories that were preserved from a glob source
-  - [text](#text) - Adding text to files
+  - [destination](#destination) - Specify the content destination
+  - [exclude](#exclude) - Exclude files and directories with a glob source
+  - [include](#include) - Include files and directories that were excluded from a glob source
+  - [preserve](#preserve) - Preserve (no Jinja2 processing) files and directories with a glob source
+  - [transform](#transform) - Transform files and directories that were preserved from a glob source
+  - [text](#text) - Add text to files
     - [append](#append) - Appending text to a file
     - [place](#place) - Placing text in a file
-  - [json](#json) - Appending to an array in a JSON file
-  - [yaml](#yaml) - Appending to an array in a YAML file
+  - [json](#json) - Append to an array in a JSON file
+  - [yaml](#yaml) - Append to an array in a YAML file
 - [universal](#universal) - Settings common to `code`, `change`, and `content` blocks
   - [remove](#remove) - Remove content
   - [condition](#condition) - Only add under certain conditions
@@ -59,7 +60,7 @@ A code block should contain a `github` block (until I support equivalents)
 which tells the forge how to create the Pull Request. Consult the
 [GitHub code](Github.md#code) docs for more info.
 
-If the Repo doesn't exists, it'll create it and add a `CNC` file which just contains
+If the Repo doesn't exist, it'll create it and add a `CNC` file which just contains
 the id of the CNC. This is done because it makes it easier to check out the code for
 changes and works well with idempotency.
 
@@ -143,7 +144,7 @@ output:
 
 The `source` setting specifies where to pull code from the repo specified in the change block.
 
-If not specified, it'll take the `destination` as it's default.
+If not specified, it'll take the `destination` as its default.
 
 ### file
 
@@ -170,16 +171,16 @@ Running the forge like so:
 
 ![source-file-forge](img/source-file-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![source-file-pr](img/source-file-pr.png)
 
-As you can see, the README.md was taken from gaf3/test-forge, transformed according
+As you can see, the `README.md` was taken from gaf3/test-forge, transformed according
 to the variables set, and put in the same location in gaf3/my-repo.
 
 ### directory
 
-The `source` setting can be relative path to a directory which will copy the entire directory:
+The `source` setting can be relative path to a directory, which will copy the entire directory:
 
 ```yaml
 description: An example
@@ -202,7 +203,7 @@ Running the forge like so:
 
 ![source-directory-forge](img/source-directory-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![source-directory-pr](img/source-directory-pr.png)
 
@@ -231,20 +232,20 @@ This is what's in the the directory in the [gaf3/test-forge](https://github.com/
 
 ![source-glob](img/source-glob.png)
 
-Only the stuff file has a 'u' in it.
+Only the stuff file has a 'u' in its name.
 
 Running the forge like so:
 
 ![source-glob-forge](img/source-glob-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![source-glob-pr](img/source-glob-pr.png)
 
 ### value
 
 The `source` setting can have a `value` setting which allows you to specify the raw value to use
-rather than looking up a file.
+rather than loading up a file.
 
 ```yaml
 description: An example
@@ -261,14 +262,14 @@ output:
         destination: done.txt
 ```
 
-Notice you need to specify a `destination` setting in this case. All the other example did have a
-`destination` - they used `source` as the default.
+Notice you need to specify a `destination` setting in this case. All the other examples did have a
+used `source` as the default `destination`.
 
 Running the forge like so:
 
 ![source-value-forge](img/source-value-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![source-value-pr](img/source-value-pr.png)
 
@@ -276,11 +277,7 @@ As we can see there's a new file `done.txt` which has the text we specified in t
 
 ## destination
 
-The `source` setting specifies where to pull code from the repo specified in the change block.
-
-If not specified, it'll take the `destination` as it's default.
-
-All the destination is the path where to put content. It can be specified differently than the
+The `destination` is the path where to put content. It can be specified differently than the
 source like so:
 
 ```yaml
@@ -301,7 +298,7 @@ Running the forge like so:
 
 ![destination-forge](img/destination-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![destination-pr](img/destination-pr.png)
 
@@ -334,7 +331,7 @@ Running the forge like so:
 
 ![exclude-forge](img/exclude-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![exclude-pr](img/exclude-pr.png)
 
@@ -342,7 +339,7 @@ Notice how all the files are copied except for the change files.
 
 ## include
 
-If you referenced a lotof files with an exclude block and what to still include a few,
+If you referenced a lot of files with an exclude block and want to still include a few,
 use an include block:
 
 ```yaml
@@ -368,7 +365,7 @@ Running the forge like so:
 
 ![include-forge](img/include-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![include-pr](img/include-pr.png)
 
@@ -377,7 +374,7 @@ Notice how all the change files are exclude except for the `change.text` file.
 ## preserve
 
 If you're referencing a lot of files with a directory or glob source, and want
-to preserve some, use an `preserve` setting.
+to preserve some, use a `preserve` setting.
 
 ```yaml
 description: An example
@@ -401,7 +398,7 @@ Running the forge like so:
 
 ![preserve-forge](img/preserve-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![preserve-pr](img/preserve-pr.png)
 
@@ -435,7 +432,7 @@ Running the forge like so:
 
 ![transform-forge](img/transform-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![transform-pr](img/transform-pr.png)
 
@@ -476,7 +473,7 @@ Running the forge like so:
 
 ![text-append-forge](img/text-append-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![text-append-pr](img/text-append-pr.png)
 
@@ -516,7 +513,7 @@ Running the forge like so:
 
 ![text-place-forge](img/text-place-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![text-place-pr](img/text-place-pr.png)
 
@@ -524,7 +521,7 @@ As you can see, our value is added before `# cnc-forge: here` line.
 
 ## json
 
-If you want to add to an array in a json file, you can use a `json` setting.
+If you want to add a value to an array in a json file, you can use a `json` setting.
 
 Note: this is idempotent, meaning if what you want to add is already in the array, it
 won't add it again.
@@ -558,7 +555,7 @@ Running the forge like so:
 
 ![json-forge](img/json-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![json-pr](img/json-pr.png)
 
@@ -566,7 +563,7 @@ As you can see, our value is added to the array at `maybe.they`
 
 ## yaml
 
-If you want to add to an array in a yaml file, you can use a `yaml` setting.
+If you want to add a value to an array in a YAML file, you can use a `yaml` setting.
 
 Note: this is idempotent, meaning if what you want to add is already in the array, it
 won't add it again.
@@ -600,7 +597,7 @@ Running the forge like so:
 
 ![yaml-forge](img/yaml-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![yaml-pr](img/yaml-pr.png)
 
@@ -639,7 +636,7 @@ Running the forge like so:
 
 ![remove-forge](img/remove-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![remove-pr](img/remove-pr.png)
 
@@ -651,7 +648,8 @@ If you put a `remove` setting in a `change` block, it'll apply that setting to a
 If you put a `remove` setting in a `code` block, it'll apply that setting to all it's `change` blocks
 (which they can override).
 
-Hitting the Remove button while forging applies `remove` to the entire `output` block.
+Hitting the Remove button while forging applies `remove` to the entire `output` block (and guess
+what! You got it, all the other blocks can override it).
 
 ## condition
 
@@ -683,25 +681,25 @@ output:
         condition: "{? 'orange' in fruits ?}"
 ```
 
-Make sure your templating uses the '{? ?}` notation.
+Make sure your templating uses the '{? ?}` notation via [yaes](https://pypi.org/project/yaes/).
 
 This is what's in the [gaf3/test-forge](https://github.com/gaf3/test-forge) Repo:
 
-![content](img/content.png)
+![condition](img/condition.png)
 
 Running the forge like so:
 
-![content-forge](img/content-forge.png)
+![condition-forge](img/condition-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
-![content-pr](img/content-pr.png)
+![condition-pr](img/condition-pr.png)
 
 Notice that only `change.text` and `change.yaml` were added based on their conditions.
 
 ## iterate
 
-If you want to repeat an action based on an array of values, use a `iteration` block:
+If you want to repeat an action based on an array of values, use a `iterate` block:
 
 ```yaml
 description: An example
@@ -734,7 +732,7 @@ Running the forge like so:
 
 ![iterate-forge](img/iterate-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![iterate-pr](img/iterate-pr.png)
 
@@ -783,7 +781,7 @@ Running the forge like so:
 
 ![transpose-forge](img/transpose-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![transpose-pr](img/transpose-pr.png)
 
@@ -791,7 +789,7 @@ Notice the two files being created from the selection and their contents has the
 
 ## blocks
 
-If you want to group several blocks under a single condition or iterate, you can use
+If you want to group several blocks under a single `condition` or `iterate`, you can use
 a `blocks` setting:
 
 ```yaml
@@ -826,7 +824,7 @@ Running the forge like so:
 
 ![blocks-forge](img/blocks-forge.png)
 
-Produces the folling Pull Request:
+Produces the folllowing Pull Request:
 
 ![blocks-pr](img/blocks-pr.png)
 
