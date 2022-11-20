@@ -25,7 +25,7 @@ This allows for integration across an organization, especially with like an inve
 
 The examples actually work if you're running locally as I've set up an extra API called
 options, which is accessible internally as `options.cnc-forge` and accessible externally
-as http://localhost:36770/.
+as http://localhost:36770/simple and http://localhost:36770/complex.
 
 # Usage
 
