@@ -48,7 +48,7 @@ And since that endpoint http://localhost:36770/simple returns the following data
 [
     "people",
     "stuff",
-    "things
+    "things"
 ]
 ```
 
