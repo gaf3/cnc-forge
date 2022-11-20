@@ -107,6 +107,6 @@ For more:
 - How [Forging](/Forging.md) works in general
 - How [Templating](/Templating.md) works in general
 - How [Input](/Input.md) works
-- How [Output](/Output.md)works
+- How [Output](/Output.md) works
 - Working with [GitHub](/GitHub.md)
 - Some tips and tricks for [Developing](/Developing.md)
