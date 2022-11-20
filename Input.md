@@ -32,7 +32,7 @@ The optional `input` section of a forge defines what fields and how they all wor
   - [update](#update) - Updating a builtin field with different settings
   - [override](#override) - Overriding the craft field with your own field
 
-# Fields
+# Field
 
 Fields are defined in the `input.fields` section. For example if you wanted a text field
 named example, you'd define it like so:
