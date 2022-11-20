@@ -23,7 +23,7 @@ even Repos, Webhooks on the Repo, even Comments on the Pull Request.
 ## Try
 
 This is mainly used for development. It forges the code but doesn't commit it, leaving it instead in
-the `cnc` directory. Check out [Development](Development.md) for more.
+the `cnc` directory. Check out [Developing](Developing.md) for more.
 
 ## Remove
 

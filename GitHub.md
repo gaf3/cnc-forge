@@ -22,7 +22,7 @@ CnC Forge is currently setup to use GitHub to source code and create code.
     - [comment](#comment) - Comment(s) to ensure on the Pull Request
   - [change](#change) - Settings that only apply to `change.github` blocks.
     - [branch](#branch) - Branch to pull content from
-- [Development](#Development) - Tips and tricks while developing
+- [Developing](#Developing) - Tips and tricks while developing
 
 Right now CnC Forge uses GitHub for git/API but I made everything modular and just haven't
 got around to creating a module for like GitLab or BitBucket, etc.
@@ -200,7 +200,7 @@ fields, but not as many as `code` and they don't do as much.
 If you want to grab code from a different branch than the Repo's default branch, use this field to
 specify the branch.
 
-# Development
+# Developing
 
 One of the main aspects of developing on a forge is to have a branch on the forge Repo. While you can
 add to each `change` block, it's easier to set the default branch for a Repo at the very top of the

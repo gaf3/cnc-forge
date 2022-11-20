@@ -1,4 +1,4 @@
-# CnC-Forge - Development
+# CnC-Forge - Developing
 
 Developing Forges can be kind of tricky. There's many ways to do things but I've
 found a few that work well for me.
@@ -25,7 +25,7 @@ Like any good doobie, when working on a forge Repo, I'll have a branch. With tha
 can copy the forges YAML to a local copy of CnC Forge's `forge/` directory. Then I can pull
 code from the branch of my forge repo and test locally.
 
-Check out [GitHub Development](GitHub.md#development) for more.
+Check out [GitHub Developing](GitHub.md#Developing) for more.
 
 # Trying
 
