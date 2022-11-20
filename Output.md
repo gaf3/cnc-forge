@@ -58,7 +58,7 @@ output:
 
 A code block should contain a `github` block (until I support equivalents)
 which tells the forge how to create the Pull Request. Consult the
-[GitHub code](Github.md#code) docs for more info.
+[GitHub code](GitHub.md#code) docs for more info.
 
 If the Repo doesn't exist, it'll create it and add a `CNC` file which just contains
 the id of the CNC. This is done because it makes it easier to check out the code for
