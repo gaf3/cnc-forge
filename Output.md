@@ -101,7 +101,7 @@ output:
 
 A `change` block should contain a `github` block (until I support
 equivalents) which merely tells the forge where to pull templates from. Consult the
-[GitHub change](Github.md#change) docs for more info.
+[GitHub change](GitHub.md#change) docs for more info.
 
 A `change` block should also contain one or more `content` blocks.
 
