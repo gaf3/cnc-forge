@@ -1,0 +1,15 @@
+description: Test forge
+input:
+  fields:
+  - name: binary
+    bool: true
+  - name: basic
+output:
+  code:
+  - github:
+      repo: gaf3/test-forge
+      prefix: "{{ ticket }}"
+    change:
+    - content:
+      - destination: people
+        remove: true

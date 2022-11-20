@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: options
+  namespace: cnc-forge
+  labels:
+    app: options
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: options
+  template:
+    metadata:
+      labels:
+        app: options
+    spec:
+      containers:
+      - name: options
+        image: docker.io/gaf3/cnc-forge-options:0.7.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          httpGet:
+            path: /health
+            port: 80
+        livenessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          httpGet:
+            path: /health
+            port: 80
+        volumeMounts:
+        - name: forge
+          mountPath: "/opt/service/forge"
+          readOnly: true
+        - name: secret
+          mountPath: "/opt/service/secret"
+          readOnly: true
+      volumes:
+      - name: forge
+        configMap:
+          name: forge
+      - name: secret
+        secret:
+          secretName: secret
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: options
+  namespace: cnc-forge
+  labels:
+    app: options
+spec:
+  selector:
+    app: options
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80

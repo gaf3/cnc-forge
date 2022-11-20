@@ -1,151 +1,112 @@
-# cnc-forge
+# CnC Forge
 
-Code and Changes Forge
+Code and Changes Forge - Templating Engine that creates Repos and Pull Requests from Inputs, Repos and Branches.
 
-# yaml
+The CnC Forge handles the boiler plate of any coding process. From simple scripts, to applications, to IasC.
 
-All output values are transformed as Jinja2 template using the values of inputs
+In this age of open source frameworks, we repeat a lot of code. While DRY is a great ideal, it's just that. In
+practice, we dance on the minutiae of repeating the same names, creating the same YAML files, or even directory
+structures. Getting started can often be the biggest and unfortunately first hurdle.
 
-## Current format:
+In this age of corporate standardization, there are all sorts of rules and they vary from workplace to workplace.
+There is no universal "right way" for much of anything and instead each workplace has various systems that to
+work together, little snippets of code that need to be just right. Furthermore, each workplace has an agreed set of
+standards for coding that is eessential for working together but tedious to implement and cantankerous to enforce.
 
-```yaml
-description: # Describes the Forge
-input: # What to input to the Forge
-  fields: # Fields to get input from (OpenGUI)
-  generate: # Method to add fields or append to
-output: # The Code and Changes to craft.
-  code: # Repo or PR to create
-  - github: # Block to describe how to interact with github
-      repo: # Repo to pull
-      branch: # Branch to pull
-    change: # Change to code
-    - github: # Block to describe how to interact with github
-        repo: # Repo to use or create
-        branch: # Branch to create with, set to default branch to skip a PR, default is cnc id
-        pull_request: # PR to create, default to branch name
-      content: # What to bring from change into code
-      - source: # From directory or file
-        destination: # To directory or file
-        exclude: # Exclude glob pattern
-        include: # Override exclude glob pattern
-        preserve: # Don't transform with Jinja2 templating glob pattern
-        transform: # Override transform glob pattern
-        condition: # Condition to satisfy
-      condition: # Condition to satisfy
-    condition: # Condition to satisfy
-  condition: # Condition to satisfy
-```
+The CnC Forge came about from my repeatedly (and originally independently) solving those two problems. The version
+here is really the 5th or 6th depending how you look at it (or what I remember). I found myself using the same
+patterns over and over again and wanted to focus on the real work.
 
-## Eventual format
+I also found companies struggling to implement new standards when us programmers like to do things our own way
+(which is vastly superior to anyone else's).
 
-```yaml
-description: # Describes the Forge
-input: # What to input to the Forge
-  extra: # Extra common/calculated fields to use
-  fields: # Fields to get input from (OpenGUI)
-  - *: Standard OpenGUI attributes
-    name: code - craft first two letters to ASCII port (to prevent local collisions)
-    name: port - Will default to craft dashes replaced with underscores
-    name: ticket - Ticket to use in making branch
-    description: Description for the field
-    labels: labels to use with options
-    requires: Other fields that must exist
-    condition: Condition to satisfy for field
-output: # The Code and Changes to craft.
-  code: # Repo or PR to create from
-  - github: # Block to describe how to interact with github
-      repo: # Repo to pull
-      branch: # Branch to pull
-    change: # Change to code
-    - github: # Block to describe how to interact with github
-        repo: # Repo to use or create
-        branch: # Branch to create with, set to default branch to skip a PR, default is cnc id
-        pull_request: # PR to create, default to branch name
-      content: # What to bring from change into code
-      - source: # From directory or file
-        destination: # To directory or file
-        exclude: # Exclude glob pattern
-        include: # Override exclude glob pattern
-        preserve: # Don't transform with Jinja2 templating glob pattern
-        transform: # Override preserve glob pattern
-        transpose: # Set new values with old
-        condition: # Condition to satisfy
-        iterate: # Iterate from a list variable into a new variable
-      condition: # Condition to satisfy
-      iterate: # Iterate from a list variable into a new variable
-    condition: # Condition to satisfy
-    iterate: # Iterate from a list variable into a new variable
-  condition: # Condition to satisfy
-  iterate: # Iterate from a list variable into a new variable
-```
+In both cases, I found that something that spit out the busywork made getting started easier and proliferated new
+standards simply because it was easier to get started this way.
 
-## Options lookup
+The CnC Forge allows you to define forges, a coding pattern you typically perform. Within that forge, you can
+define inputs, fields for each part of the process that varies, like the name of a service, or a cluster to
+deplopy to. You can then define outputs, what Repos to create Pull Requests on or even to create from scratch, and
+what Repos to pull code from, what files or directories to grab and even how to add text to specific places in those
+files.
 
-You can lookup options in a field from API calls based on values previous fields.
+Once you have a forge, you can use it create CnC's (code and changes). As a web service, the CnC Forge allows you
+to select that forge, fill in the inputs defined in an autogenerated form, and then create the Pull Requests based
+on your outputs. Unless specified otherwise, each file in the outputs is treated like a Jinja2 template with the
+input values used as the template variables. The result is one or more Pull Requests (even on a new Repo) that perform
+all that manual tedious work.
 
-Create a file secret/options_yourservice.json:
+# Forge
 
-```json
-{
-    "url": "https://your.service.com", // the base url to use
-    "verify": true, // Whether to verify tls
-}
-```
+A forge is a single YAML file. He's a simple one:
 
 ```yaml
-- name: dynamic
-  description: Grab some values from elsewhere
-  options:
-    creds: yourservice # Matches the file secrets/options_yourservice.json
-    uri: $ Url endpoint to hit
-    verify: True # whether to do tls verify (default True)
-    method: POST # method to use (default GET)
-    path: resource # path to put on endof url
-    headers: # Extra headers to send
-      name: value
-    params: # What to put in the query string
-      name: value
-    body: # what to put in the JSON body
-      name: value
-    results: # Key in the return body that referances array, if blank will use whole body as array
-    option: # Key in each array element to use as option value
-    title: # Key in each array element to use as title value (optional)
+description: Test forge
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source: README.md
 ```
 
-The values used are the creds fiel dict updated with the options block dict. So feel free to put whatever wherever.
+Which we'll put in a file called `test.yaml` and add to a copy of the CnC Forge (more on how later).
 
-Just keep the secret values in the creds file.
-
-## Some experiental ideas
+Looking at the `gaf3/test-forge/README.md`, we can see it's using Jinja2 templating for the title name:
 
 ```
-iterate:
-  one: many
-  one: many
-
-source: .vscode/gui.launch.json
-destination: .vscode/.launch.json
-json:
-  append: configurations because the
-
-source: .vscode/python.launch.json
-destination: .vscode/.launch.json
-transpose:
-  python: daemon
-json:
-  append: configurations
-
-source: image.Jenkinsfile
-destination: Jenkinsfile
-transpose:
-  microservice: api
-text:
-  inject: image
-
-source: cleanup.Jenkinsfile
-destination: Jenkinsfile
-transpose:
-  microservice: api
-text:
-  inject: cleanup
+# {{ craft }}
+Test Forge to test the CnC Forge
 ```
+
+The CNC Forge starts here:
+
+![home](img/home.png)
+
+Clicking on Forges, we see our test forge, named `test` because we called the file `test.yaml`.
+
+![forges](img/forges.png)
+
+Clicking on that, we see it's entire YAML:
+
+![test-forge](img/test-forge.png)
+
+Clicking on Craft, we get the form to fill out.
+
+![test-forge](img/test-craft.png)
+
+The `craft` field by default is added to every forge (but can be overridden). The CnC Forge use that field
+to name the CnC it's going to create. In the case of our test forge, it'll use that field to create a new Repo.
+
+Cllicking Commit (we'll go over Try and Remove later) will create a CnC:
+
+![test-create](img/test-create.png)
+
+Once the CnC is complete, it'll give us a link to all the Pull Requests it created, which in this case is just
+the one:
+
+![test-complete](img/test-complete.png)
+
+Clicking on the PR. we can see there's one file, `README.md`, to add and it's been transformed by Jinja2 to
+have our craft `demo-doc`:
+
+![test-pr](img/test-pr.png)
+
+We can also see that there's one file in the Repo and it's from the forge:
+
+![test-cnc](img/test-cnc.png)
+
+That was added by the CnC Forge so it could checkout and commit against the Repo.
+
+And that's it. It's that simple but can be far more complex.
+
+For more:
+- Local and Production [Setup](/Setup.md)
+- How [Forging](/Forging.md) works in general
+- How [Templating](/Templating.md) works in general
+- How [Input](/Input.md) works
+- How [Output](/Output.md)works
+- Working with [GitHub](/GitHub.md)
+- Some tips and tricks for [Developing](/Developing.md)

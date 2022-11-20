@@ -31,13 +31,13 @@ class GitHub:
         org: IF there's an org to do
         user: If this is owned by a user
         path: Full path to access the repo
-        hook: The hook(s) to use
         prefix: Prefix to use for branch and title
+        branch: THe branch for the PR
         title: Title for the PR
         default: THe default branch of the repo
-        branch: THe branch for the PR
         base: The base branch of the PR
         url: The pull equest url
+        hook: The hook(s) to use
     """
 
     creds = {}

@@ -1,0 +1,15 @@
+description: Test forge for missing files
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      prefix: "{{ ticket }}"
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source: README.md
+      - source: README.*
+        destination: README.wild
+      - source: people
+      - source: derp

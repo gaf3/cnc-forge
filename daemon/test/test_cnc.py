@@ -448,7 +448,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.file(content, {"sure": "yep", "there": "here"})
 
-        mock_write.write.assert_called_once_with('{\n    "here": [\n        "yep"\n    ]\n}')
+        mock_write.write.assert_called_once_with('{\n    "here": [\n        "yep"\n    ]\n}\n')
 
         # YAML
 

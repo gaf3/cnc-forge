@@ -1,0 +1,13 @@
+description: Test forge for soruce
+output:
+  code:
+  - github:
+      repo: "{{ craft }}"
+      prefix: "{{ ticket }}"
+    change:
+    - github:
+        repo: gaf3/test-forge
+      content:
+      - source:
+          value: Hey
+        destination: val.txt

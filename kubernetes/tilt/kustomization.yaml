@@ -6,6 +6,7 @@ resources:
 - ../../api/kubernetes/tilt/
 - ../../gui/kubernetes/tilt/
 - ../../daemon/kubernetes/tilt/
+- ../../options/kubernetes/tilt/
 patchesJson6902:
 - target:
     group: apps
