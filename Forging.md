@@ -72,7 +72,7 @@ automatically create CICD pipelines with Jenkins, GitHub actions, or ArgoCD. The
 changes to files, whether text, JSON, or YAML, adding to lists etc, all have made for a very smooth
 process of creating services.
 
-# Integration
+## Integration
 
 Now that the CnC Forge has the ability to remove files and undo forging, I'm using it to maintain
 Services and Infra. Part of IasC is adding resources to an Inventory service. With [Options](Options.md)

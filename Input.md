@@ -2,7 +2,7 @@
 
 The optional `input` section of a forge defines what fields and how they all work.
 
-- [Fields](#Fields) - Field settings
+- [Field]](#Field) - Field settings
   - [name](#name) - What to call the field and how to reference in templating
   - [required](#required) - Make a field required
   - [validation](#validation) - How to validate a field with a regex

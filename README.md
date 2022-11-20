@@ -1,4 +1,4 @@
-# cnc-forge
+# CnC Forge
 
 Code and Changes Forge - Templating Engine that creates Repos and Pull Requests from Inputs, Repos and Branches.
 

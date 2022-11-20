@@ -1,4 +1,4 @@
-# CnC-Forge - Developing
+# CnC Forge - Developing
 
 Developing Forges can be kind of tricky. There's many ways to do things but I've
 found a few that work well for me.
