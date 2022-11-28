@@ -1,0 +1,4 @@
+description: An example
+input:
+  fields:
+  - name: example

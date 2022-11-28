@@ -1,0 +1,5 @@
+description: An example
+input:
+  fields:
+  - name: craft
+    description: She's crafty and just my type

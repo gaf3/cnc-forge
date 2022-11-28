@@ -1,0 +1,6 @@
+description: An example
+input:
+  fields:
+  - name: example
+    validation: ^[a-z]{3,6}$
+    trigger: true

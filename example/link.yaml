@@ -1,0 +1,5 @@
+description: An example
+input:
+  fields:
+  - name: example
+    link: https://github.com/gaf3/cnc-forge

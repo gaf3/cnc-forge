@@ -1,0 +1,24 @@
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+output:
+  code:
+  - github:
+      repo: gaf3/my-repo
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+      - iterate:
+          fruit: fruits
+        blocks:
+          source: README.md
+          destination: "{{ fruit }}.md"
+          transpose:
+            craft: fruit

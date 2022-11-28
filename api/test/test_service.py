@@ -967,14 +967,14 @@ class TestCnC(TestRestful):
 
         response = self.api.post("/cnc/here", json={
             "values": {
-                "many": ["fun-time"],
+                "many": ["fun-time", "good-time", "best-time", "worst-time", "no-time"],
                 "some": "thing"
             },
             "action": "test"
         })
 
         self.assertStatusValue(response, 202, "cnc", {
-            "id": "fun-time-here-1604275200",
+            "id": "fun-time-good-time-best-time-worst-time-no-tim-here-1604275200",
             "description": "Here",
             "input": {
                 "craft": "many",
@@ -989,10 +989,10 @@ class TestCnC(TestRestful):
             },
             "values": {
                 "forge": "here",
-                "many": ["fun-time"],
-                "code": "fun_time",
+                "many": ["fun-time", "good-time", "best-time", "worst-time", "no-time"],
+                "code": "fun_time_good_time_best_time_worst_time_no_tim",
                 "some": "thing",
-                "cnc": "fun-time-here-1604275200"
+                "cnc": "fun-time-good-time-best-time-worst-time-no-tim-here-1604275200"
             },
             "status": "Created",
             "action": "test"

@@ -375,7 +375,7 @@ class CnC(flask_restful.Resource):
         craft = cnc["values"][forge["input"]["craft"] if "craft" in forge.get("input", {}) else "craft"]
 
         if isinstance(craft, list):
-            craft = craft[0]
+            craft = "-".join(craft)[:46]
 
         cnc["values"]["code"] = craft.replace('-', '_')
         cnc["status"] = "Created"

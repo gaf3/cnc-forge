@@ -1,0 +1,12 @@
+description: An example
+output:
+  code:
+  - github:
+      repo: my-repo
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+        source: /
+        exclude: change.*
+        include: "*.text"

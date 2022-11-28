@@ -1,0 +1,31 @@
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+    trigger: true
+  - iterate:
+      fruit: fruits
+    requires: fruits
+    blocks:
+    - name: "{{ fruit }}_cost"
+    - name: "{{ fruit }}_price"
+    - name: "{{ fruit }}_shine"
+      bool: true
+      condition: "{? fruit != 'orange' ?}"
+output:
+  code:
+  - github:
+      repo: gaf3/my-repo
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+      - condition: "{? 'apple' in fruits ?}"
+        blocks:
+        - source: README.md
+        - source: change.*

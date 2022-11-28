@@ -1,0 +1,26 @@
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+    trigger: true
+  - name: "{{ fruit }}_cost"
+    iterate:
+      fruit: fruits
+    requires: fruits
+output:
+  code:
+  - github:
+      repo: gaf3/my-repo
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+      - source: README.md
+        destination: "{{ fruit }}.md"
+        iterate:
+          fruit: fruits

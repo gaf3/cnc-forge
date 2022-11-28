@@ -1,0 +1,11 @@
+description: An example
+output:
+  code:
+  - github:
+      repo: gaf3/test-forge
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+        destination: README.md
+        remove: true

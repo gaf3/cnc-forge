@@ -1,0 +1,13 @@
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+    trigger: true
+  - name: example
+    requires: fruits
+    description: "describe these {{ fruits | length }} fruits"

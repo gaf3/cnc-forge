@@ -1,0 +1,7 @@
+description: An example
+input:
+  fields:
+  - name: example
+    options:
+      creds: basic
+      url: http://options.cnc-forge/basic

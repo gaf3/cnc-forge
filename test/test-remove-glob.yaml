@@ -1,0 +1,10 @@
+description: Test forge
+output:
+  code:
+  - github:
+      repo: gaf3/test-forge
+      prefix: "{{ ticket }}"
+    change:
+    - content:
+      - destination: people/*u*
+        remove: true
