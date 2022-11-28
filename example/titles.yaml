@@ -1,0 +1,12 @@
+description: An example
+input:
+  fields:
+  - name: example
+    options:
+    - 1
+    - 2
+    - 3
+    titles:
+      1: One
+      2: Two
+      3: Three

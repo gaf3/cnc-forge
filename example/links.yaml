@@ -1,0 +1,9 @@
+description: An example
+input:
+  fields:
+  - name: example
+    link:
+    - url: https://github.com/gaf3/cnc-forge
+      name: CnC Forge
+      target: codin
+    - https://pypi.org/project/yaes/

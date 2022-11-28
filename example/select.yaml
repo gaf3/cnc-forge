@@ -1,0 +1,9 @@
+description: An example
+input:
+  fields:
+  - name: example
+    options:
+    - 1
+    - 2
+    - 3
+    style: select

@@ -319,7 +319,10 @@ class CnC:
 
         # If source is a directory
 
-        if isinstance(content['source'], str) and os.path.isdir(self.source(content, path=True)):
+        if (
+            (isinstance(content.get('source'), str) and os.path.isdir(self.source(content, path=True))) or
+            (isinstance(content.get('destination'), str) and os.path.isdir(self.destination(content, path=True)))
+        ):
 
             self.directory(content, values)
 
@@ -331,6 +334,32 @@ class CnC:
 
         if "content" in self.data:
             del self.data['content']
+
+    def places(self, content, values, place):
+        """
+        Expands a place to sources or desintations
+        """
+
+        content[place] = self.engine.transform(content[place], values)
+
+        if isinstance(content[place], dict):
+
+            places = [content[place]]
+
+        else:
+
+            if content[place] == "/":
+                places = [""]
+            else:
+
+                path = getattr(self, place)(content, path=True)
+
+                if '*' in path or os.path.isdir(path):
+                    places = [self.relative(source) for source in glob.glob(path)]
+                else:
+                    places = [self.relative(path)]
+
+        return places
 
     def content(self, content, values):
         """
@@ -347,32 +376,22 @@ class CnC:
 
         # Transform the source on templating, using destination if it doesn't exist for remove
 
-        content["source"] = self.engine.transform(content.get("source", content.get("destination")), values)
+        if "source" in content:
 
-        if isinstance(content["source"], dict):
+            # Go through the source as glob, transforming destination accordingly, assuming source if missing
 
-            sources = [content["source"]]
+            for place in self.places(content, values, "source"):
+                self.craft({**content,
+                    "source": place,
+                    "destination": self.engine.transform(content.get("destination", place), values)
+                }, values)
 
         else:
 
-            if content["source"] == "/":
-                sources = [""]
-            else:
-
-                path = self.source(content, path=True)
-
-                if '*' in path or os.path.isdir(path):
-                    sources = [self.relative(source) for source in glob.glob(path)]
-                else:
-                    sources = [self.relative(path)]
-
-        # Go through the source as glob, transforming destination accordingly, assuming source if missing
-
-        for source in sources:
-            self.craft({**content,
-                "source": source,
-                "destination": self.engine.transform(content.get("destination", source), values)
-            }, values)
+            for place in self.places(content, values, "destination"):
+                self.craft({**content,
+                    "destination": place
+                }, values)
 
     def change(self, change, values):
         """

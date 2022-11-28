@@ -1,0 +1,9 @@
+description: An example
+input:
+  fields:
+  - name: example
+    options:
+      url: http://options.cnc-forge/complex
+      results: fruits
+      option: id
+      title: meta__fancy

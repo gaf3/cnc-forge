@@ -1,0 +1,6 @@
+description: An example
+input:
+  fields:
+  - name: example
+    default: sure
+    readonly: true

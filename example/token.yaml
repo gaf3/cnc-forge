@@ -1,0 +1,7 @@
+description: An example
+input:
+  fields:
+  - name: example
+    options:
+      creds: token
+      url: http://options.cnc-forge/token

@@ -1,0 +1,5 @@
+description: An example
+input:
+  craft: example
+  fields:
+  - name: example

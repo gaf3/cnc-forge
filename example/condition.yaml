@@ -1,0 +1,27 @@
+description: An example
+input:
+  fields:
+  - name: fruits
+    options:
+    - apple
+    - pear
+    - orange
+    multi: true
+    trigger: true
+  - name: example
+    condition: "{? 'apple' in fruits ?}"
+    requires: fruits
+output:
+  code:
+  - github:
+      repo: gaf3/my-repo
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+      - source: change.text
+        condition: "{? 'apple' in fruits ?}"
+      - source: change.json
+        condition: "{? 'pear' in fruits ?}"
+      - source: change.yaml
+        condition: "{? 'orange' in fruits ?}"

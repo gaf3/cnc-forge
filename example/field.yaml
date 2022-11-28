@@ -1,0 +1,7 @@
+description: An example
+input:
+  fields:
+  - name: example
+    fields:
+    - name: more
+    - name: fun

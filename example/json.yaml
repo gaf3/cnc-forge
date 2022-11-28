@@ -1,0 +1,13 @@
+description: An example
+output:
+  code:
+  - github:
+      repo: gaf3/test-forge
+    change:
+      github:
+        repo: gaf3/test-forge
+      content:
+      - source:
+          value: '"{{ craft }}"'
+        destination: change.json
+        json: maybe__they
