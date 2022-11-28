@@ -19,6 +19,16 @@ class TestCnC(unittest.TestCase):
         self.assertEqual(init.data, {})
         self.assertTrue(init.engine.env.keep_trailing_newline)
 
+    def test_placing(self):
+
+        self.assertEqual(self.cnc.placing({"source": None}), "source")
+        self.assertEqual(self.cnc.placing({}), "destination")
+
+    def test_placing(self):
+
+        self.assertEqual(self.cnc.place({"source": "ya"}), "ya")
+        self.assertEqual(self.cnc.place({"destination": "sure"}), "sure")
+
     def test_exclude(self):
 
         self.assertFalse(self.cnc.exclude({"include": ["a"], "exclude": [], "source": "a"}))
@@ -26,6 +36,12 @@ class TestCnC(unittest.TestCase):
         self.assertTrue(self.cnc.exclude({"include": [], "exclude": ["a"], "source": "a"}))
         self.assertTrue(self.cnc.exclude({"include": [], "exclude": ["a*"], "source": "ab"}))
         self.assertFalse(self.cnc.exclude({"include": [], "exclude": [], "source": "a"}))
+
+        self.assertFalse(self.cnc.exclude({"include": ["a"], "exclude": [], "destination": "a"}))
+        self.assertFalse(self.cnc.exclude({"include": ["a*"], "exclude": [], "destination": "ab"}))
+        self.assertTrue(self.cnc.exclude({"include": [], "exclude": ["a"], "destination": "a"}))
+        self.assertTrue(self.cnc.exclude({"include": [], "exclude": ["a*"], "destination": "ab"}))
+        self.assertFalse(self.cnc.exclude({"include": [], "exclude": [], "destination": "a"}))
 
     def test_preserve(self):
 
@@ -276,7 +292,7 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.craft = unittest.mock.MagicMock()
 
-        # .git
+        # .git source
 
         content = {
             "source": "a/b/.git",
@@ -291,7 +307,21 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.craft.assert_not_called()
 
-        # root
+        # .git destination
+
+        content = {
+            "destination": "a/b/.git",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.directory(content, None)
+
+        self.cnc.craft.assert_not_called()
+
+        # root source
 
         content = {
             "source": "",
@@ -313,7 +343,27 @@ class TestCnC(unittest.TestCase):
             "transform": []
         }, None)
 
-        # regular
+        # root destination
+
+        content = {
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.craft(content, None)
+
+        self.cnc.craft.assert_called_with({
+            "destination": "",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, None)
+
+        # regular source
 
         content = {
             "source": "a/b",
@@ -328,6 +378,26 @@ class TestCnC(unittest.TestCase):
 
         self.cnc.craft.assert_called_with({
             "source": "a/b/c",
+            "destination": "a/b/c",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }, None)
+
+        # regular destination
+
+        content = {
+            "destination": "a/b",
+            "include": [],
+            "exclude": [],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.directory(content, None)
+
+        self.cnc.craft.assert_called_with({
             "destination": "a/b/c",
             "include": [],
             "exclude": [],
@@ -536,6 +606,7 @@ class TestCnC(unittest.TestCase):
             "ala"
         )
 
+
     @unittest.mock.patch("builtins.print")
     @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("os.makedirs")
@@ -556,7 +627,7 @@ class TestCnC(unittest.TestCase):
 
         mock_print.assert_not_called()
 
-        # Directory
+        # Directory source
 
         mock_exists.return_value = False
         mock_isdir.return_value = True
@@ -574,6 +645,20 @@ class TestCnC(unittest.TestCase):
         self.cnc.craft(content, None)
 
         mock_print.assert_called_once_with(content)
+
+        # Directory destination
+
+        content = {
+            "destination": "a/b",
+            "include": [],
+            "exclude": ["a/b/*"],
+            "preserve": [],
+            "transform": []
+        }
+
+        self.cnc.craft(content, None)
+
+        mock_print.assert_called_with(content)
 
         # Copy
 
@@ -606,48 +691,46 @@ class TestCnC(unittest.TestCase):
 
     @unittest.mock.patch("os.path.isdir")
     @unittest.mock.patch("glob.glob")
-    def test_content(self, mock_glob, mock_isdir):
+    def test_places(self, mock_glob, mock_isdir):
 
         self.cnc.craft = unittest.mock.MagicMock()
 
         mock_glob.return_value = ["/opt/service/cnc/sweat/destination/a/b/c"]
         mock_isdir.return_value = False
 
-        # Root
+        # Root source
 
         content = {
             "source": "/"
         }
 
-        self.cnc.content(content, {})
+        self.assertEqual(self.cnc.places(content, {}), [""])
 
-        self.cnc.craft.assert_called_once_with({
-            "source": "",
-            "destination": "",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": []
-        }, {})
+        # Root destination
 
-        # Glob
+        content = {
+            "destination": "/"
+        }
+
+        self.assertEqual(self.cnc.places(content, {}), [""])
+
+        # Glob source
 
         content = {
             "source": "{{ start }}/*"
         }
 
-        self.cnc.content(content, {"start": "a/b"})
+        self.assertEqual(self.cnc.places(content, {}), ["a/b/c"])
 
-        self.cnc.craft.assert_called_with({
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": []
-        }, {"start": "a/b"})
+        # Glob destination
 
-        # Dir
+        content = {
+            "destination": "{{ start }}/*"
+        }
+
+        self.assertEqual(self.cnc.places(content, {}), ["a/b/c"])
+
+        # Dir source
 
         mock_isdir.return_value = True
 
@@ -655,17 +738,45 @@ class TestCnC(unittest.TestCase):
             "source": "{{ start }}/"
         }
 
-        self.cnc.content(content, {"start": "a/b"})
+        self.assertEqual(self.cnc.places(content, {"start": "a/b"}), ["a/b/c"])
 
-        self.cnc.craft.assert_called_with({
-            "source": "a/b/c",
-            "destination": "a/b/c",
-            "include": [],
-            "exclude": [],
-            "preserve": [],
-            "transform": []
-        }, {"start": "a/b"})
+        # Dir destination
 
+        content = {
+            "destination": "{{ start }}/"
+        }
+
+        self.assertEqual(self.cnc.places(content, {"start": "a/b"}), ["a/b/c"])
+
+        mock_isdir.return_value = False
+
+        # dict source
+
+        content = {
+            "source": {
+                "value": "template"
+            }
+        }
+
+        self.assertEqual(self.cnc.places(content, {}), [{"value": "template"}])
+
+        # dict destination
+
+        content = {
+            "destination": {
+                "value": "template"
+            }
+        }
+
+        self.assertEqual(self.cnc.places(content, {}), [{"value": "template"}])
+
+    @unittest.mock.patch("os.path.isdir")
+    @unittest.mock.patch("glob.glob")
+    def test_content(self, mock_glob, mock_isdir):
+
+        self.cnc.craft = unittest.mock.MagicMock()
+
+        mock_glob.return_value = ["/opt/service/cnc/sweat/destination/a/b/c"]
         mock_isdir.return_value = False
 
         # Converting
@@ -712,12 +823,9 @@ class TestCnC(unittest.TestCase):
             "transform": ["l"]
         }, {"start": "a/b"})
 
-        # dict soure
+        # destination
 
         content = {
-            "source": {
-                "value": "template"
-            },
             "destination": "{{ start }}/d",
             "include": ["i"],
             "exclude": ["j"],
@@ -728,9 +836,6 @@ class TestCnC(unittest.TestCase):
         self.cnc.content(content, {"start": "a/b"})
 
         self.cnc.craft.assert_called_with({
-            "source": {
-                "value": "template"
-            },
             "destination": "a/b/d",
             "include": ["i"],
             "exclude": ["j"],

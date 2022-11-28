@@ -31,7 +31,23 @@ class CnC:
         self.engine = yaes.Engine(jinja2.Environment(keep_trailing_newline=True))
 
     @staticmethod
-    def exclude(content):
+    def placing(content):
+        """
+        Get either source of destination
+        """
+
+        return "source" if "source" in content else "destination"
+
+    @classmethod
+    def place(cls, content):
+        """
+        Get either source of destination
+        """
+
+        return content[cls.placing(content)]
+
+    @classmethod
+    def exclude(cls, content):
         """
         Exclude content from being copied from source to destination based on pattern
         """
@@ -39,13 +55,13 @@ class CnC:
         # Check override to include no matter what first
 
         for pattern in content['include']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(cls.place(content), pattern):
                 return False
 
         # Now exclude
 
         for pattern in content['exclude']:
-            if fnmatch.fnmatch(content['source'], pattern):
+            if fnmatch.fnmatch(cls.place(content), pattern):
                 return True
 
         return False
@@ -247,12 +263,17 @@ class CnC:
 
         # Iterate though the items found as long as we're not .git
 
-        if content["source"].split("/")[-1] != ".git":
-            for item in os.listdir(self.source(content, path=True)):
-                self.craft({**content,
-                    "source": f"{content['source']}/{item}" if content['source'] else item,
-                    "destination": f"{content['destination']}/{item}" if content['destination'] else item
-                }, values)
+        if self.place(content).split("/")[-1] != ".git":
+            for item in os.listdir(getattr(self, self.placing(content))(content, path=True)):
+                if self.placing(content) == "source":
+                    self.craft({**content,
+                        "source": f"{content['source']}/{item}" if content['source'] else item,
+                        "destination": f"{content['destination']}/{item}" if content['destination'] else item
+                    }, values)
+                else:
+                    self.craft({**content,
+                        "destination": f"{content['destination']}/{item}" if content['destination'] else item
+                    }, values)
 
     def file(self, content, values):
         """
@@ -335,24 +356,24 @@ class CnC:
         if "content" in self.data:
             del self.data['content']
 
-    def places(self, content, values, place):
+    def places(self, content, values):
         """
         Expands a place to sources or desintations
         """
 
-        content[place] = self.engine.transform(content[place], values)
+        content[self.placing(content)] = self.engine.transform(self.place(content), values)
 
-        if isinstance(content[place], dict):
+        if isinstance(self.place(content), dict):
 
-            places = [content[place]]
+            places = [self.place(content)]
 
         else:
 
-            if content[place] == "/":
+            if self.place(content) == "/":
                 places = [""]
             else:
 
-                path = getattr(self, place)(content, path=True)
+                path = getattr(self, self.placing(content))(content, path=True)
 
                 if '*' in path or os.path.isdir(path):
                     places = [self.relative(source) for source in glob.glob(path)]
@@ -376,11 +397,11 @@ class CnC:
 
         # Transform the source on templating, using destination if it doesn't exist for remove
 
-        if "source" in content:
+        if self.placing(content) == "source":
 
             # Go through the source as glob, transforming destination accordingly, assuming source if missing
 
-            for place in self.places(content, values, "source"):
+            for place in self.places(content, values):
                 self.craft({**content,
                     "source": place,
                     "destination": self.engine.transform(content.get("destination", place), values)
@@ -388,7 +409,7 @@ class CnC:
 
         else:
 
-            for place in self.places(content, values, "destination"):
+            for place in self.places(content, values):
                 self.craft({**content,
                     "destination": place
                 }, values)
