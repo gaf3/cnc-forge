@@ -133,13 +133,23 @@ class TestCnC(unittest.TestCase):
             "/opt/service/cnc/sweat/destination/dest"
         )
 
+    @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("os.path.isdir")
     @unittest.mock.patch("shutil.rmtree")
     @unittest.mock.patch("os.remove")
-    def test_remove(self, mock_remove, mock_rmtree, mock_isdir):
+    def test_remove(self, mock_remove, mock_rmtree, mock_isdir, mock_exists):
+
+        # not there
+
+        mock_exists.return_value = False
+
+        self.cnc.remove({"destination": "dest"})
+
+        mock_isdir.assert_not_called()
 
         # dir
 
+        mock_exists.return_value = True
         mock_isdir.return_value = True
 
         self.cnc.remove({"destination": "dest"})
@@ -569,8 +579,6 @@ class TestCnC(unittest.TestCase):
 
         mock_write.write.assert_called_once_with('hey')
 
-        mock_stat.assert_not_called()
-
         mock_mode.assert_not_called()
 
         # Mode
@@ -597,7 +605,7 @@ class TestCnC(unittest.TestCase):
 
         mock_write.write.assert_called_once_with('yep')
 
-        mock_stat.assert_called_once_with(
+        mock_stat.assert_called_with(
             "/opt/service/cnc/sweat/source/a/b/c"
         )
 

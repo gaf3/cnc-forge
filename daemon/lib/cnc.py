@@ -160,6 +160,9 @@ class CnC:
 
         destination = self.destination(content, path=True)
 
+        if not os.path.exists(destination):
+            return
+
         if os.path.isdir(destination):
             shutil.rmtree(destination)
             return
