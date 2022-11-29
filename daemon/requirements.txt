@@ -5,7 +5,7 @@ python-json-logger==0.1.11
 PyYAML==5.3.1
 redis==3.5.3
 overscore==0.1.1
-yaes==0.2.0
+yaes==0.2.2
 ptvsd==4.3.2
 coverage==5.2.1
 pylint==2.5.3
