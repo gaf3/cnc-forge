@@ -653,6 +653,25 @@ class TestCnC(TestRestful):
             3: "three"
         })
 
+        # fields
+
+        field = {
+            "name": "deez",
+            "fields": [
+                {
+                    "iterate": {
+                        "d": "ds"
+                    },
+                    "name": "{{ d }}"
+                }
+            ]
+        }
+
+        cnc.field(fields, field, {"ds": "nuts"})
+
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(len(fields["deez"].fields), 4)
+
     @unittest.mock.patch('service.os.path.exists')
     @unittest.mock.patch('service.open', create=True)
     def test_fields(self, mock_open, mock_exists):

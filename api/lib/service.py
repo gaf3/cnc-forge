@@ -169,18 +169,6 @@ class Health(flask_restful.Resource):
         return {"message": "OK"}
 
 
-class Simple(flask_restful.Resource):
-    """
-    Class for Health checks
-    """
-
-    def get(self):
-        """
-        Just return ok
-        """
-        return {"message": "OK"}
-
-
 class Forge(flask_restful.Resource):
     """
     Forge class for design patterns to cnc
@@ -279,6 +267,17 @@ class CnC(flask_restful.Resource):
         Adds a field if requires and conditions are satsified
         """
 
+        children = None
+
+        if "fields" in field:
+
+            children = opengui.Fields()
+
+            for child, child_values in self.engine.each(field["fields"], values):
+                self.field(children, child, child_values)
+
+            del field["fields"]
+
         field = self.engine.transform(field, values)
 
         if field["name"] in RESERVED:
@@ -293,6 +292,8 @@ class CnC(flask_restful.Resource):
             Options(field["options"]).retrieve(extra)
 
         fields.update({**field, **extra})
+
+        fields[field['name']].fields = children
 
     def fields(self, forge, values):
         """
