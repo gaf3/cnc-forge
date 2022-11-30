@@ -671,6 +671,10 @@ class TestCnC(TestRestful):
 
         self.assertEqual(len(fields), 3)
         self.assertEqual(len(fields["deez"].fields), 4)
+        self.assertEqual(fields["deez"][0].name, "n")
+        self.assertEqual(fields["deez"][1].name, "u")
+        self.assertEqual(fields["deez"][2].name, "t")
+        self.assertEqual(fields["deez"][3].name, "s")
 
     @unittest.mock.patch('service.os.path.exists')
     @unittest.mock.patch('service.open', create=True)
