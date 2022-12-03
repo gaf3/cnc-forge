@@ -245,6 +245,12 @@ class GitHub:
                 self.data["url"] = exists["html_url"]
                 return
 
+        base_sha = self.request("GET", f"repos/{self.data['path']}/branches/{self.data['base']}", json=create)['commit']['sha']
+        branch_sha = self.request("GET", f"repos/{self.data['path']}/branches/{self.data['branch']}", json=create)['commit']['sha']
+
+        if base_sha == base_sha:
+            return
+
         create = {
             "head": self.data['branch'],
             "base": self.data["base"],
