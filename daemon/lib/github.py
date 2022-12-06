@@ -249,7 +249,7 @@ class GitHub:
         branch_sha = self.request("GET", f"repos/{self.data['path']}/branches/{self.data['branch']}")['commit']['sha']
 
         if base_sha == branch_sha:
-            self.cnc.link( f"https://{self.host}/{self.data['path']}/compare/{self.data['base']}...{self.data['branch']}")
+            self.cnc.link(f"https://{self.host}/{self.data['path']}/compare/{self.data['base']}...{self.data['branch']}")
             return
 
         create = {
