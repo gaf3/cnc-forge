@@ -396,9 +396,9 @@ class TestGitHub(unittest.TestCase):
             "html_url": "ya"
         }])
 
-        self.github.request = unittest.mock.MagicMock(return_value={
-            "html_url": "sure"
-        })
+        self.github.request = unittest.mock.MagicMock()
+
+        self.github.cnc.link = unittest.mock.MagicMock()
 
         # exists
 
@@ -412,7 +412,13 @@ class TestGitHub(unittest.TestCase):
 
         self.github.request.assert_not_called()
 
-        # doesn't exist
+        # no changes
+
+        self.github.request = unittest.mock.MagicMock(return_value={
+            "commit": {
+                "sha": "same"
+            }
+        })
 
         self.github.data = {
             "path": "my/stuff",
@@ -420,6 +426,28 @@ class TestGitHub(unittest.TestCase):
             "title": "heavyweight",
             "base": "drum"
         }
+
+        self.github.pull_request()
+
+        self.github.cnc.link.assert_called_once_with("https://most/my/stuff/compare/drum...doesntexist")
+
+        # create
+
+        self.github.request = unittest.mock.MagicMock(side_effect=[
+            {
+                "commit": {
+                    "sha": "diff"
+                }
+            },
+            {
+                "commit": {
+                    "sha": "rent"
+                }
+            },
+            {
+                "html_url": "sure"
+            }
+        ])
 
         self.github.pull_request()
 
@@ -443,7 +471,27 @@ class TestGitHub(unittest.TestCase):
             "title": "heavyweight"
         })
 
+        self.github.cnc.link.assert_called_with("sure")
+
     def test_comment(self):
+
+        self.github.request = unittest.mock.MagicMock()
+
+        # none
+
+        self.github.data = {
+            "path": "my/stuff",
+            "comment": [
+                {"body": "here"},
+                {"body": "there"}
+            ]
+        }
+
+        self.github.comment()
+
+        self.github.request.assert_not_called()
+
+        # some
 
         self.github.data = {
             "path": "my/stuff",
@@ -457,8 +505,6 @@ class TestGitHub(unittest.TestCase):
         self.github.iterate = unittest.mock.MagicMock(return_value=[{
             "body": "here"
         }])
-
-        self.github.request = unittest.mock.MagicMock()
 
         self.github.comment()
 
@@ -605,7 +651,6 @@ class TestGitHub(unittest.TestCase):
         self.github.data = {"url": "sure"}
 
         self.github.cnc = unittest.mock.MagicMock()
-        self.github.link = unittest.mock.MagicMock()
         self.github.pull_request = unittest.mock.MagicMock()
         self.github.comment = unittest.mock.MagicMock()
 
@@ -651,8 +696,6 @@ class TestGitHub(unittest.TestCase):
         self.github.cnc.data["action"] = "commit"
 
         self.github.commit()
-
-        self.github.cnc.link.assert_called_once_with("sure")
 
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git add .", shell=True),

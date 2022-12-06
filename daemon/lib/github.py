@@ -245,6 +245,13 @@ class GitHub:
                 self.data["url"] = exists["html_url"]
                 return
 
+        base_sha = self.request("GET", f"repos/{self.data['path']}/branches/{self.data['base']}")['commit']['sha']
+        branch_sha = self.request("GET", f"repos/{self.data['path']}/branches/{self.data['branch']}")['commit']['sha']
+
+        if base_sha == branch_sha:
+            self.cnc.link(f"https://{self.host}/{self.data['path']}/compare/{self.data['base']}...{self.data['branch']}")
+            return
+
         create = {
             "head": self.data['branch'],
             "base": self.data["base"],
@@ -255,10 +262,15 @@ class GitHub:
 
         self.data["url"] = self.request("POST", f"repos/{self.data['path']}/pulls", json=create)["html_url"]
 
+        self.cnc.link(self.data['url'])
+
     def comment(self):
         """
         Ensure one or more comment are on the pull_request
         """
+
+        if "url" not in self.data:
+            return
 
         number = self.data["url"].rsplit("/", 1)[-1]
 
@@ -371,5 +383,3 @@ class GitHub:
 
         self.pull_request()
         self.comment()
-
-        self.cnc.link(self.data['url'])
