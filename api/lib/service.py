@@ -182,7 +182,7 @@ class Forge(flask_restful.Resource):
 
         forges = {}
 
-        for forge_path in sorted(glob.glob("/opt/service/forge/*.yaml")):
+        for forge_path in sorted(glob.glob("/opt/service/forge/*.yaml")) + sorted(glob.glob("/opt/service/repo/*/*/forge/*.yaml")):
             if forge_path.split("/")[-1] not in ["fields.yaml", "values.yaml"]:
                 with open(forge_path, "r") as forge_file:
                     forges[forge_path.split("/")[-1].split(".")[0]] = yaml.safe_load(forge_file)["description"]
@@ -195,10 +195,12 @@ class Forge(flask_restful.Resource):
         Gets a single forge and return as dict
         """
 
-        with open(f"/opt/service/forge/{id}.yaml", "r") as forge_file:
+        paths = sorted(glob.glob(f"/opt/service/repo/*/*/forge/{id}.yaml"))
+
+        with open(paths[-1] if paths else f"/opt/service/forge/{id}.yaml", "r") as forge_file:
             forge = yaml.safe_load(forge_file)
 
-        forge["id"] = id
+        forge["id"] = id.split("/")[-1]
 
         return forge
 

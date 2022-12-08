@@ -18,3 +18,17 @@ spec:
         - name: debug
           containerPort: 5678
           protocol: TCP
+        volumeMounts:
+        - name: cnc
+          mountPath: /opt/service/cnc
+        - name: repo
+          mountPath: /opt/service/repo
+      volumes:
+      - name: cnc
+        hostPath:
+          path: /dev/null
+          type: Directory
+      - name: repo
+        hostPath:
+          path: /dev/null
+          type: Directory

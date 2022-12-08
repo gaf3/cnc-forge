@@ -542,12 +542,12 @@ class TestGitHub(unittest.TestCase):
         ])
         mock_rmtree.assert_called_once_with("noise/source", ignore_errors=True)
 
-        mock_exists.assert_called_once_with("/opt/service/repos/my/stuff")
+        mock_exists.assert_called_once_with("/opt/service/repo/my/stuff")
 
-        mock_copytree.assert_called_once_with("/opt/service/repos/my/stuff", "noise/source")
+        mock_copytree.assert_called_once_with("/opt/service/repo/my/stuff", "noise/source")
 
         mock_print.assert_has_calls([
-            unittest.mock.call("copying repos/my/stuff")
+            unittest.mock.call("copying repo/my/stuff")
         ])
 
         # clone

@@ -422,32 +422,46 @@ class TestForge(TestRestful):
     @unittest.mock.patch('service.open', create=True)
     def test_forges(self, mock_open, mock_glob):
 
-        mock_glob.return_value = [
-            "/opt/service/forge/there.yaml",
-            "/opt/service/forge/here.yaml",
-            "/opt/service/forge/fields.yaml",
-            "/opt/service/forge/values.yaml"
+        mock_glob.side_effect = [
+            [
+                "/opt/service/forge/there.yaml",
+                "/opt/service/forge/here.yaml",
+                "/opt/service/forge/fields.yaml",
+                "/opt/service/forge/values.yaml"
+            ],
+            [
+                "/opt/service/repo/my/stuff/forge/every.yaml",
+            ]
         ]
 
         mock_open.side_effect = [
             unittest.mock.mock_open(read_data='description: Here').return_value,
-            unittest.mock.mock_open(read_data='description: There').return_value
+            unittest.mock.mock_open(read_data='description: There').return_value,
+            unittest.mock.mock_open(read_data='description: Every').return_value
         ]
 
         self.assertEqual(service.Forge.forges(), {
+            "every": "Every",
             "here": "Here",
             "there": "There"
         })
 
-        mock_glob.assert_called_with("/opt/service/forge/*.yaml")
+        mock_glob.assert_has_calls([
+            unittest.mock.call("/opt/service/forge/*.yaml"),
+            unittest.mock.call("/opt/service/repo/*/*/forge/*.yaml")
+        ])
 
         mock_open.assert_has_calls([
             unittest.mock.call("/opt/service/forge/here.yaml", "r"),
-            unittest.mock.call("/opt/service/forge/there.yaml", "r")
+            unittest.mock.call("/opt/service/forge/there.yaml", "r"),
+            unittest.mock.call("/opt/service/repo/my/stuff/forge/every.yaml", "r")
         ])
 
+    @unittest.mock.patch('service.glob.glob')
     @unittest.mock.patch('service.open', create=True)
-    def test_forge(self, mock_open):
+    def test_forge(self, mock_open, mock_glob):
+
+        mock_glob.retrurn_value = []
 
         mock_open.side_effect = [
             unittest.mock.mock_open(read_data='description: Here').return_value
@@ -466,9 +480,12 @@ class TestForge(TestRestful):
     @unittest.mock.patch('service.open', create=True)
     def test_list(self, mock_open, mock_glob):
 
-        mock_glob.return_value = [
-            "/opt/service/forge/there.yaml",
-            "/opt/service/forge/here.yaml"
+        mock_glob.side_effect = [
+            [
+                "/opt/service/forge/there.yaml",
+                "/opt/service/forge/here.yaml"
+            ],
+            []
         ]
 
         mock_open.side_effect = [
@@ -494,8 +511,19 @@ class TestForge(TestRestful):
     @unittest.mock.patch('service.open', create=True)
     def test_retrieve(self, mock_open, mock_glob):
 
-        mock_glob.return_value = [
-            "/opt/service/forge/here.yaml"
+        mock_glob.side_effect = [
+            [
+                "/opt/service/forge/here.yaml",
+            ],
+            [],
+            [
+                "/opt/service/forge/here.yaml",
+            ],
+            [],
+            [
+                "/opt/service/forge/here.yaml",
+            ],
+            []
         ]
 
         mock_open.side_effect = [
@@ -520,9 +548,22 @@ class TestForge(TestRestful):
     @unittest.mock.patch('service.open', create=True)
     def test_get(self, mock_open, mock_glob):
 
-        mock_glob.return_value = [
-            "/opt/service/forge/there.yaml",
-            "/opt/service/forge/here.yaml"
+        mock_glob.side_effect = [
+            [
+                "/opt/service/forge/there.yaml",
+                "/opt/service/forge/here.yaml"
+            ],
+            [],
+            [
+                "/opt/service/forge/there.yaml",
+                "/opt/service/forge/here.yaml"
+            ],
+            [],
+            [
+                "/opt/service/forge/there.yaml",
+                "/opt/service/forge/here.yaml"
+            ],
+            []
         ]
 
         mock_open.side_effect = [
