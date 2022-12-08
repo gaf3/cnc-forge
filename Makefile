@@ -4,9 +4,9 @@ TILT_PORT=6738
 
 up:
 	mkdir -p cnc
+	mkdir -p repo
 	mkdir -p forge
 	mkdir -p secret
-	mkdir -p daemon/repos
 	echo "- op: replace\n  path: /spec/template/spec/volumes/0/hostPath/path\n  value: $(PWD)/cnc" > kubernetes/tilt/cnc.yaml
 	echo "- op: replace\n  path: /spec/template/spec/volumes/1/hostPath/path\n  value: $(PWD)/repo" > kubernetes/tilt/repo.yaml
 	tilt --port $(TILT_PORT) up --context docker-desktop
