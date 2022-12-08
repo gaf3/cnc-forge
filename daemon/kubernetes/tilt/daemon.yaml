@@ -21,8 +21,14 @@ spec:
         volumeMounts:
         - name: cnc
           mountPath: /opt/service/cnc
+        - name: repos
+          mountPath: /opt/service/repos
       volumes:
       - name: cnc
+        hostPath:
+          path: /dev/null
+          type: Directory
+      - name: repos
         hostPath:
           path: /dev/null
           type: Directory
