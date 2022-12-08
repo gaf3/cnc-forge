@@ -218,3 +218,7 @@ That means any reference to the `gaf3/repo` will by default use the `mybranch` b
 I do this because I'm more likely to miss a bunch of little places to change vs. a single spot. That
 way I'm more likely to release a updated forge without it looking for a developing branch I've long
 since deleted when I merged a Pull Request.
+
+Alternativeluy, you check out code to the `daemon/repos` directory, matching the Repo path like
+`gaf3/test-forge` CnC Forge will pull code from there instead of fetching it remotely. This can save
+a lot of development time without having to constantly commit.
