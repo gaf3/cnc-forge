@@ -1,10 +1,10 @@
 *.pyc
 cnc/
+repo/
 forge/
 secret/
 kubernetes/tilt/cnc.yaml
-kubernetes/tilt/repos.yaml
+kubernetes/tilt/repo.yaml
 kubernetes/tilt/forge.yaml
 kubernetes/tilt/secret.yaml
-daemon/repos
 .DS_Store

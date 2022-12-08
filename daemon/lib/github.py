@@ -301,10 +301,10 @@ class GitHub:
 
         shutil.rmtree(source, ignore_errors=True)
 
-        if os.path.exists(f"/opt/service/repos/{self.data['path']}"):
+        if os.path.exists(f"/opt/service/repo/{self.data['path']}"):
 
-            print(f"copying repos/{self.data['path']}")
-            shutil.copytree(f"/opt/service/repos/{self.data['path']}", source)
+            print(f"copying repo/{self.data['path']}")
+            shutil.copytree(f"/opt/service/repo/{self.data['path']}", source)
 
         else:
 

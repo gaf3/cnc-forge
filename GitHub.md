@@ -219,6 +219,10 @@ I do this because I'm more likely to miss a bunch of little places to change vs.
 way I'm more likely to release a updated forge without it looking for a developing branch I've long
 since deleted when I merged a Pull Request.
 
-Alternativeluy, you check out code to the `daemon/repos` directory, matching the Repo path like
-`gaf3/test-forge` CnC Forge will pull code from there instead of fetching it remotely. This can save
-a lot of development time without having to constantly commit.
+Alternatively, you check out code to the `repo/` directory, matching the Repo path like
+`gaf3/test-forge` CnC Forge will pull code from there instead of fetching it remotely. Furthermore, if
+you have a `forge/` in your checked out Repo in `repo/` it'll load and use all the forges in that
+directory. Changes here are immediatley refelcted in the local running CnC Forge. No need to reload
+anything.
+
+This can save a lot of development time without having to constantly commit.

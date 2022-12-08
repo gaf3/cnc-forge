@@ -13,6 +13,20 @@ patchesJson6902:
     version: v1
     kind: Deployment
     namespace: cnc-forge
+    name: api
+  path: cnc.yaml
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    namespace: cnc-forge
+    name: api
+  path: repo.yaml
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    namespace: cnc-forge
     name: daemon
   path: cnc.yaml
 - target:
@@ -21,4 +35,4 @@ patchesJson6902:
     kind: Deployment
     namespace: cnc-forge
     name: daemon
-  path: repos.yaml
+  path: repo.yaml

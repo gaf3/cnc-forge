@@ -1,4 +1,4 @@
-VERSION?=0.7.6
+VERSION?=0.7.7
 TILT_PORT=6738
 .PHONY: up down tag untag
 
@@ -8,7 +8,7 @@ up:
 	mkdir -p secret
 	mkdir -p daemon/repos
 	echo "- op: replace\n  path: /spec/template/spec/volumes/0/hostPath/path\n  value: $(PWD)/cnc" > kubernetes/tilt/cnc.yaml
-	echo "- op: replace\n  path: /spec/template/spec/volumes/1/hostPath/path\n  value: $(PWD)/daemon/repos" > kubernetes/tilt/repos.yaml
+	echo "- op: replace\n  path: /spec/template/spec/volumes/1/hostPath/path\n  value: $(PWD)/repo" > kubernetes/tilt/repo.yaml
 	tilt --port $(TILT_PORT) up --context docker-desktop
 
 down:
