@@ -303,7 +303,7 @@ class GitHub:
 
         if os.path.exists(f"/opt/service/repos/{self.data['path']}"):
 
-            print(f"copying repos/{self.data['path']}" )
+            print(f"copying repos/{self.data['path']}")
             shutil.copytree(f"/opt/service/repos/{self.data['path']}", source)
 
         else:
