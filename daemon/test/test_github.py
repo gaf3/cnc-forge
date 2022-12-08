@@ -514,11 +514,11 @@ class TestGitHub(unittest.TestCase):
 
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("shutil.rmtree")
+    @unittest.mock.patch("os.path.exists")
     @unittest.mock.patch("builtins.print")
+    @unittest.mock.patch("shutil.copytree")
     @unittest.mock.patch("subprocess.check_output")
-    def test_change(self, mock_subprocess, mock_print, mock_rmtree, mock_chdir):
-
-        mock_subprocess.side_effect = ["cloned", "checked out"]
+    def test_change(self, mock_subprocess, mock_copytree, mock_print, mock_exists, mock_rmtree, mock_chdir):
 
         self.github.cnc = unittest.mock.MagicMock()
         self.github.cnc.data = {}
@@ -529,15 +529,36 @@ class TestGitHub(unittest.TestCase):
             "branch": "ayup"
         }
 
+        # copy
+
+        mock_exists.return_value = True
+
         self.github.change()
 
         self.assertEqual(self.github.cnc.data["change"], self.github.data)
 
         mock_chdir.assert_has_calls([
-            unittest.mock.call("noise"),
-            unittest.mock.call("noise/source")
+            unittest.mock.call("noise")
         ])
         mock_rmtree.assert_called_once_with("noise/source", ignore_errors=True)
+
+        mock_exists.assert_called_once_with("/opt/service/repos/my/stuff")
+
+        mock_copytree.assert_called_once_with("/opt/service/repos/my/stuff", "noise/source")
+
+        mock_print.assert_has_calls([
+            unittest.mock.call("copying repos/my/stuff")
+        ])
+
+        # clone
+
+        mock_exists.return_value = False
+        del self.github.cnc.data["change"]
+
+        mock_subprocess.side_effect = ["cloned", "checked out"]
+
+        self.github.change()
+
         mock_subprocess.assert_has_calls([
             unittest.mock.call("git clone git@most:my/stuff.git source", shell=True),
             unittest.mock.call("git checkout ayup", shell=True)

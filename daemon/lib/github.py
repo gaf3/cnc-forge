@@ -301,11 +301,18 @@ class GitHub:
 
         shutil.rmtree(source, ignore_errors=True)
 
-        print(subprocess.check_output(f"git clone git@{self.host}:{self.data['path']}.git source", shell=True))
+        if os.path.exists(f"/opt/service/repos/{self.data['path']}"):
 
-        if "branch" in self.data:
-            os.chdir(source)
-            print(subprocess.check_output(f"git checkout {self.data['branch']}", shell=True))
+            print(f"copying repos/{self.data['path']}")
+            shutil.copytree(f"/opt/service/repos/{self.data['path']}", source)
+
+        else:
+
+            print(subprocess.check_output(f"git clone git@{self.host}:{self.data['path']}.git source", shell=True))
+
+            if "branch" in self.data:
+                os.chdir(source)
+                print(subprocess.check_output(f"git checkout {self.data['branch']}", shell=True))
 
     def code(self):
         """

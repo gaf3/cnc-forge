@@ -15,3 +15,10 @@ patchesJson6902:
     namespace: cnc-forge
     name: daemon
   path: cnc.yaml
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    namespace: cnc-forge
+    name: daemon
+  path: repos.yaml
