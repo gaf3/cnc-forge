@@ -14,6 +14,7 @@ The optional `input` section of a forge defines what fields and how they all wor
   - [options](#options) - Only allow certain values via radio buttons
   - [titles](#titles) - Give those options their own descriptions
   - [multi](#multi) - Allow to select multiple options with checkboxes
+  - [all](#all) - Display a checkbox to select/deselect all
   - [bool](#bool) - Have a value be only true or false with a single checkbox
   - [style](#style) - Change the appearance of text or options
     - [textarea](#textarea) - Make a regular text field a textarea field
@@ -301,6 +302,27 @@ And evaluate as an array:
     "example": [2, 3]
 }
 ```
+
+## all
+
+If you have checkboxes and want to be able to select/deselect all:
+
+```yaml
+description: An example
+input:
+  fields:
+  - multi: true
+    all: true
+    name: example
+    options:
+    - 1
+    - 2
+    - 3
+```
+
+Which would display:
+
+![all](/img/all.png)
 
 ## bool
 

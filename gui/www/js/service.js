@@ -45,6 +45,12 @@ DRApp.controller("Base",null,{
         this.it = this.rest("OPTIONS", "api/cnc/" + DRApp.current.path.id, this.fields_request());
         this.application.render(this.it);
     },
+    field_all: function(field) {
+        var checked = $("input[name='" + field + "__all']").prop('checked');
+        $("input[name='" + field + "']").each(function () {
+            $(this).prop('checked', checked);
+        });
+    },
     field_value: function(field, value, values) {
         for (var option = 0; option < field.options.length; option++) {
             if (value == field.options[option]) {

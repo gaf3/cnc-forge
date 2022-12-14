@@ -41,6 +41,12 @@
             {{= field.titles ? field.titles[value] : value}}<br/>
             {{?}}
         {{??}}
+            {{?field.multi && field.all }}
+            <input
+                type="checkbox" name="{{!full_name}}__all"
+                OnInput="DRApp.current.controller.field_all('{{!full_name}}');"
+            /> (all)<br/>
+            {{?}}
             {{~field.options :option}}
             <input
                 value="{{!option}}"
