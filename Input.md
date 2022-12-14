@@ -311,8 +311,8 @@ If you have checkboxes and want to be able to select/deselect all:
 description: An example
 input:
   fields:
-  - all: true
-    multi: true
+  - multi: true
+    all: true
     name: example
     options:
     - 1
@@ -322,7 +322,7 @@ input:
 
 Which would display:
 
-![multi](/img/all.png)
+![all](/img/all.png)
 
 ## bool
 
