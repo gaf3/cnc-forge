@@ -190,6 +190,26 @@ Whatever is in that dict is sent to the GitHub API as t=he payload, so you can a
 
 Note: This is done only during the "Commit" action. "Try" doesn't do anything with it.
 
+### labels
+
+(optional) - Labels to add to the Pull Request. This is useful for any GitOps Automation that is looking for labels on a PR.
+
+It requires a list of strings, and will add those labels to the PR.
+
+```yaml
+github:
+  labels:
+  - label1
+  - label2
+```
+
+or
+
+```yaml
+github:
+  labels: [label1, label2]
+```
+
 ## change
 
 In a `change` block, a `github` block tells the CnC Forge how to grab content. So it has addtional
