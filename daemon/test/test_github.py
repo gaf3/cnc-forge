@@ -117,7 +117,8 @@ class TestGitHub(unittest.TestCase):
         init = github.GitHub(cnc, {
             "repo": "anization/git.com",
             "hook": "captain",
-            "comment": "smead"
+            "comment": "smead",
+            "labels": "[smead]"
         })
 
         self.assertEqual(init.data, {
@@ -135,6 +136,11 @@ class TestGitHub(unittest.TestCase):
                 {
                     "body": "smead"
                 }
+            ],
+            "labels": [
+              {
+                    "labels": ["smead"]
+              }
             ]
         })
 
@@ -472,6 +478,27 @@ class TestGitHub(unittest.TestCase):
         })
 
         self.github.cnc.link.assert_called_with("sure")
+
+    def test_labels(self):
+
+          self.github.data = {
+              "path": "my/stuff",
+              "url": "pr/7",
+              "labels": [
+                  "here",
+                  "there"
+              ]
+          }
+
+          self.github.request = unittest.mock.MagicMock()
+
+          self.github.labels()
+
+          self.github.request.assert_called_with("POST", "repos/my/stuff/issues/7/labels", json={
+            "labels": [
+              "here",
+              "there"
+          ]})
 
     def test_comment(self):
 
