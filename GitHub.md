@@ -20,6 +20,7 @@ CnC Forge is currently setup to use GitHub to source code and create code.
     - [base](#base) - Base branch of the Pull Request
     - [hook](#hook) - Webhook(s) to ensure on the Repo
     - [comment](#comment) - Comment(s) to ensure on the Pull Request
+    - [labels](#labels) - Label(s) to ensure on the Pull Request
   - [change](#change) - Settings that only apply to `change.github` blocks.
     - [branch](#branch) - Branch to pull content from
 - [Developing](#Developing) - Tips and tricks while developing
@@ -207,7 +208,15 @@ or
 
 ```yaml
 github:
-  labels: [label1, label2]
+  labels: label1
+```
+
+which is the same as:
+
+```yaml
+github:
+  labels:
+  - label1
 ```
 
 ## change

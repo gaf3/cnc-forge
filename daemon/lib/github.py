@@ -39,7 +39,7 @@ class GitHub:
         url: The pull request url
         hook: The hook(s) to use
         comment: The comment(s) to use
-        labels: The labels to use (list)
+        labels: The labels to use
     """
 
     creds = {}
@@ -128,8 +128,6 @@ class GitHub:
 
             if isinstance(self.data["labels"], str):
                 self.data["labels"] = [self.data["labels"]]
-
-            self.data["labels"] = [{"labels": self.data["labels"]}]
 
     def request(self, method, path, params=None, json=None):
         """
@@ -297,19 +295,12 @@ class GitHub:
         Ensure one or more labels are on the pull_request
         """
 
-        if "url" not in self.data:
+        if "url" not in self.data or "labels" not in self.data:
             return
 
         number = self.data["url"].rsplit("/", 1)[-1]
 
-        exists = [labels["labels"] for labels in self.iterate(f"repos/{self.data['path']}/issues/{number}/labels")]
-
-        for labels in self.data.get("labels", []):
-
-            if labels['labels'] in exists:
-                continue
-
-            self.request("POST", f"repos/{self.data['path']}/issues/{number}/labels", json=labels)
+        self.request("POST", f"repos/{self.data['path']}/issues/{number}/labels", json={"labels": self.data["labels"]})
 
     def change(self):
         """
