@@ -36,8 +36,10 @@ class GitHub:
         title: Title for the PR
         default: THe default branch of the repo
         base: The base branch of the PR
-        url: The pull equest url
+        url: The pull request url
         hook: The hook(s) to use
+        comment: The comment(s) to use
+        labels: The labels to use
     """
 
     creds = {}
@@ -121,6 +123,11 @@ class GitHub:
                 self.data["comment"] = [self.data["comment"]]
 
             self.data["comment"] = [{"body": comment} if isinstance(comment, str) else comment for comment in self.data["comment"]]
+
+        if "labels" in self.data:
+
+            if isinstance(self.data["labels"], str):
+                self.data["labels"] = [self.data["labels"]]
 
     def request(self, method, path, params=None, json=None):
         """
@@ -283,6 +290,18 @@ class GitHub:
 
             self.request("POST", f"repos/{self.data['path']}/issues/{number}/comments", json=comment)
 
+    def labels(self):
+        """
+        Ensure one or more labels are on the pull_request
+        """
+
+        if "url" not in self.data or "labels" not in self.data:
+            return
+
+        number = self.data["url"].rsplit("/", 1)[-1]
+
+        self.request("POST", f"repos/{self.data['path']}/issues/{number}/labels", json={"labels": self.data["labels"]})
+
     def change(self):
         """
         Clones a repo for a change block
@@ -390,3 +409,4 @@ class GitHub:
 
         self.pull_request()
         self.comment()
+        self.labels()

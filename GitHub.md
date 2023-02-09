@@ -20,6 +20,7 @@ CnC Forge is currently setup to use GitHub to source code and create code.
     - [base](#base) - Base branch of the Pull Request
     - [hook](#hook) - Webhook(s) to ensure on the Repo
     - [comment](#comment) - Comment(s) to ensure on the Pull Request
+    - [labels](#labels) - Label(s) to ensure on the Pull Request
   - [change](#change) - Settings that only apply to `change.github` blocks.
     - [branch](#branch) - Branch to pull content from
 - [Developing](#Developing) - Tips and tricks while developing
@@ -189,6 +190,34 @@ Whatever is in that dict is sent to the GitHub API as t=he payload, so you can a
 [API Documentation](https://docs.github.com/en/rest/issues/comments#create-an-issue-comment)
 
 Note: This is done only during the "Commit" action. "Try" doesn't do anything with it.
+
+### labels
+
+(optional) - Labels to add to the Pull Request. This is useful for any GitOps Automation that is looking for labels on a PR.
+
+It requires a list of strings, and will add those labels to the PR.
+
+```yaml
+github:
+  labels:
+  - label1
+  - label2
+```
+
+or
+
+```yaml
+github:
+  labels: label1
+```
+
+which is the same as:
+
+```yaml
+github:
+  labels:
+  - label1
+```
 
 ## change
 

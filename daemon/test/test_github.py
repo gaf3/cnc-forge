@@ -117,7 +117,8 @@ class TestGitHub(unittest.TestCase):
         init = github.GitHub(cnc, {
             "repo": "anization/git.com",
             "hook": "captain",
-            "comment": "smead"
+            "comment": "smead",
+            "labels": "smead"
         })
 
         self.assertEqual(init.data, {
@@ -135,7 +136,8 @@ class TestGitHub(unittest.TestCase):
                 {
                     "body": "smead"
                 }
-            ]
+            ],
+            "labels": ["smead"]
         })
 
     def test_request(self):
@@ -512,6 +514,54 @@ class TestGitHub(unittest.TestCase):
             "body": "there"
         })
 
+    def test_labels(self):
+
+
+
+        self.github.request = unittest.mock.MagicMock()
+
+        # no url
+
+        self.github.data = {
+            "path": "my/stuff"
+        }
+
+        self.github.labels()
+
+        self.github.request.assert_not_called()
+
+        # no labels
+
+        self.github.data = {
+            "path": "my/stuff",
+            "url": "pr/7"
+        }
+
+        self.github.labels()
+
+        self.github.request.assert_not_called()
+
+        # labels
+
+        self.github.data = {
+            "path": "my/stuff",
+            "url": "pr/7",
+            "labels": [
+                "here",
+                "there"
+            ]
+        }
+
+        self.github.labels()
+
+        self.github.request.assert_called_with("POST", "repos/my/stuff/issues/7/labels", json={
+            "labels": [
+                "here",
+                "there"
+            ]
+        })
+
+
     @unittest.mock.patch("os.chdir")
     @unittest.mock.patch("shutil.rmtree")
     @unittest.mock.patch("os.path.exists")
@@ -674,6 +724,7 @@ class TestGitHub(unittest.TestCase):
         self.github.cnc = unittest.mock.MagicMock()
         self.github.pull_request = unittest.mock.MagicMock()
         self.github.comment = unittest.mock.MagicMock()
+        self.github.labels = unittest.mock.MagicMock()
 
         self.github.cnc.data = {"id": "sweat", "action": "test"}
         self.github.cnc.base.return_value = "noise"
@@ -712,6 +763,10 @@ class TestGitHub(unittest.TestCase):
         )
         mock_subprocess.assert_not_called()
 
+        self.github.pull_request.assert_not_called()
+        self.github.comment.assert_not_called()
+        self.github.labels.assert_not_called()
+
         # commit
 
         self.github.cnc.data["action"] = "commit"
@@ -729,3 +784,7 @@ class TestGitHub(unittest.TestCase):
             unittest.mock.call("committed"),
             unittest.mock.call("pushed")
         ])
+
+        self.github.pull_request.assert_called_once_with()
+        self.github.comment.assert_called_once_with()
+        self.github.labels.assert_called_once_with()
