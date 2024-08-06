@@ -27,6 +27,13 @@ code from the branch of my forge repo and test locally.
 
 Check out [GitHub Developing](GitHub.md#Developing) for more.
 
+# Local
+
+To make things even easier, you can now checkout forge repos to the repo directory. Checkout the
+repo in the form of `repo/<org-user>/<repo>` and the Forge will look to that directory first
+before pulling down code. You can tehn commit/pull request your forge repo when you're happy with.
+This eliminates a ton of toil.
+
 # Trying
 
 Key to testing locally is the Try action. What this does is create all the files it would commit
